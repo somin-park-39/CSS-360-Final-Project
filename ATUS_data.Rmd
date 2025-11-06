@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(lubridate)
 ```
 
 ## ATUS Data
@@ -29,7 +30,6 @@ rost <- rost |> rename(id = TUCASEID,
                age = TEAGE,
                gender = TESEX)
 
-resp$TUFNWGTP
 resp <- resp |> select(TUCASEID, TUDIARYDATE, TUYEAR, TUMONTH, TUDIARYDAY, TEHRUSLT, TELFS, TESCHENR, TRHHCHILD, TRMJOCC1, TRTALONE, TUFNWGTP, TU20FWGT)
 resp <- resp |> rename(id = TUCASEID,
                date = TUDIARYDATE,
@@ -65,15 +65,24 @@ who <- who |> rename(id = TUCASEID,
               activity_line_num = TUACTIVITY_N,
               with_whom = TUWHO_CODE)
 
-options(scipen=999)
+# options(scipen=999)
 ```
 
 ```{r merge}
 activity <- left_join(activity, who, by = c("id", "activity_line_num")) # merge activity and who data
-
 resp <- left_join(resp, rost, by = "id") |> relocate(c(age, gender), .after = id) # merge resp and roster data
 
 activity <- left_join(activity, resp, by = "id") #merge activity and resp data
-activity <- activity |> select(-with_whom.y) |> rename(with_whom = with_whom.x) 
-activity <- activity |> relocate(activity:activity_line_num, .after = last_col())
+activity <- activity |> relocate(activity_line_num:with_whom, .after = last_col())
+```
+
+```{r cleaning}
+activity$gender <- factor(activity$gender,
+                               levels = c(1, 2),        
+                               labels = c("M", "F"))
+
+activity <- activity |> mutate(date = ymd(date))
+activity$day_of_wk <- factor(activity$day_of_wk,
+                             levels = c(1:7),
+                             labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
 ```
