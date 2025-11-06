@@ -29,7 +29,8 @@ rost <- rost |> rename(id = TUCASEID,
                age = TEAGE,
                gender = TESEX)
 
-resp <- resp |> select(TUCASEID, TUDIARYDATE, TUYEAR, TUMONTH, TUDIARYDAY, TEHRUSLT, TELFS, TESCHENR, TRHHCHILD, TRMJOCC1, TRTALONE)
+resp$TUFNWGTP
+resp <- resp |> select(TUCASEID, TUDIARYDATE, TUYEAR, TUMONTH, TUDIARYDAY, TEHRUSLT, TELFS, TESCHENR, TRHHCHILD, TRMJOCC1, TRTALONE, TUFNWGTP, TU20FWGT)
 resp <- resp |> rename(id = TUCASEID,
                date = TUDIARYDATE,
                year = TUYEAR,
@@ -40,7 +41,9 @@ resp <- resp |> rename(id = TUCASEID,
                student_status = TESCHENR,
                children_under_18 = TRHHCHILD,
                occupation = TRMJOCC1,
-               nonwork_time_alone = TRTALONE
+               nonwork_time_alone = TRTALONE,
+               weight = TUFNWGTP,
+               weight_for_2020 = TU20FWGT
                )
 
 activity <- activity |> select(TUCASEID, TUACTIVITY_N, TRCODEP, TRTIER1P, TRTIER2P, TEWHERE, TUACTDUR, TUCUMDUR, TUSTARTTIM, TUSTOPTIME, TUCC5)
@@ -61,4 +64,16 @@ who <- who |> select(TUCASEID, TUACTIVITY_N, TUWHO_CODE)
 who <- who |> rename(id = TUCASEID,
               activity_line_num = TUACTIVITY_N,
               with_whom = TUWHO_CODE)
+
+options(scipen=999)
+```
+
+```{r merge}
+activity <- left_join(activity, who, by = c("id", "activity_line_num")) # merge activity and who data
+
+resp <- left_join(resp, rost, by = "id") |> relocate(c(age, gender), .after = id) # merge resp and roster data
+
+activity <- left_join(activity, resp, by = "id") #merge activity and resp data
+activity <- activity |> select(-with_whom.y) |> rename(with_whom = with_whom.x) 
+activity <- activity |> relocate(activity:activity_line_num, .after = last_col())
 ```
