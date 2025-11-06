@@ -1,0 +1,64 @@
+---
+title: "CSS-360-Final-Project"
+author: "Somin Park"
+date: "2025-11-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## ATUS Data
+Reference for data descriptions: https://www.bls.gov/tus/data/datafiles-0324.htm
+
+```{r import}
+resp <- read.delim('atusresp-0324/atusresp_0324.dat', sep=",")
+rost <- read.delim('atusrost-0324/atusrost_0324.dat', sep=",")
+activity <- read.delim('atusact-0324/atusact_0324.dat', sep=",")
+who <- read.delim('atuswho-0324/atuswho_0324.dat', sep=",")
+```
+
+```{r cleaning columns}
+rost <- rost |> filter(TULINENO == 1)
+who <- who |> filter(TULINENO == 1)
+
+rost <- rost |> select(TUCASEID, TEAGE, TESEX)
+rost <- rost |> rename(id = TUCASEID,
+               age = TEAGE,
+               gender = TESEX)
+
+resp <- resp |> select(TUCASEID, TUDIARYDATE, TUYEAR, TUMONTH, TUDIARYDAY, TEHRUSLT, TELFS, TESCHENR, TRHHCHILD, TRMJOCC1, TRTALONE)
+resp <- resp |> rename(id = TUCASEID,
+               date = TUDIARYDATE,
+               year = TUYEAR,
+               month = TUMONTH,
+               day_of_wk = TUDIARYDAY,
+               work_hrs_per_wk = TEHRUSLT,
+               work_status = TELFS,
+               student_status = TESCHENR,
+               children_under_18 = TRHHCHILD,
+               occupation = TRMJOCC1,
+               nonwork_time_alone = TRTALONE
+               )
+
+activity <- activity |> select(TUCASEID, TUACTIVITY_N, TRCODEP, TRTIER1P, TRTIER2P, TEWHERE, TUACTDUR, TUCUMDUR, TUSTARTTIM, TUSTOPTIME, TUCC5)
+activity <- activity |> rename(id = TUCASEID,
+                   activity_line_num = TUACTIVITY_N,
+                   activity = TRCODEP,
+                   first_two_digits_activity = TRTIER1P,
+                   firist_four_digits_activity = TRTIER2P,
+                   location = TEWHERE,
+                   duration = TUACTDUR,
+                   cum_duration =TUCUMDUR,
+                   start_time = TUSTARTTIM,
+                   stop_time = TUSTOPTIME,
+                   with_children = TUCC5
+                   )
+
+who <- who |> select(TUCASEID, TUACTIVITY_N, TUWHO_CODE)
+who <- who |> rename(id = TUCASEID,
+              activity_line_num = TUACTIVITY_N,
+              with_whom = TUWHO_CODE)
+```
