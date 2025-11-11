@@ -38,9 +38,28 @@ head(locations)
 ```
 
 ```{r}
-titles <- page %>%
-  html_nodes("h3") %>%
-  html_text(trim = TRUE)
+titles <- 
+  page %>%
+    html_nodes("h3") %>%
+    html_text(trim = TRUE)
+
+length(titles)
+length(dates)
+length(groups)
+length(locations)
+
+cat("Titles:", length(titles), " Groups:", length(groups),
+    " Locations:", length(locations), " Dates:", length(dates), "\n")
+
+min_len <- min(length(titles), length(groups), length(locations), length(dates))
+if (min_len == 0) {
+  print("1 or more fields returned 0 results")
+}
+
+titles <- titles[1:min_len]
+groups <- groups[1:min_len]
+locations <- locations[1:min_len]
+dates <- dates[1:min_len]
 
 meetups <- data.frame(
   title = titles,
@@ -49,10 +68,5 @@ meetups <- data.frame(
   location = locations,
   stringsAsFactors = FALSE
 )
-
-head(meetups)
-
-meetups_clean <- meetups %>%
-  filter(title != "") %>%
-  distinct(title, .keep_all = TRUE)
+print(meetups)
 ```
