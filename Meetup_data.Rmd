@@ -1,0 +1,58 @@
+---
+title: "Meetup_data"
+author: "Radhika Patel"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r import}
+library(rvest)
+library(dplyr)
+library(stringr)
+url <- "https://www.meetup.com/find/?keywords=art&location=us--nj--New+Brunswick&source=EVENTS"
+page <- read_html(url)
+```
+
+```{r date w/time}
+dates <- 
+  page %>%
+    html_nodes("time") %>%
+    html_text(trim = TRUE)
+
+head(dates)
+```
+
+```{r group/location}
+groups <- 
+  page %>%
+    html_nodes(".text--labelSecondary a") %>%
+    html_text(trim = TRUE)
+
+locations <- 
+  page %>%
+    html_nodes(".venueDisplay-venue-address") %>%
+    html_text(trim = TRUE)
+
+head(groups)
+head(locations)
+```
+
+```{r}
+titles <- page %>%
+  html_nodes("h3") %>%
+  html_text(trim = TRUE)
+
+meetups <- data.frame(
+  title = titles,
+  date = dates,
+  group = groups,
+  location = locations,
+  stringsAsFactors = FALSE
+)
+
+head(meetups)
+
+meetups_clean <- meetups %>%
+  filter(title != "") %>%
+  distinct(title, .keep_all = TRUE)
+```
