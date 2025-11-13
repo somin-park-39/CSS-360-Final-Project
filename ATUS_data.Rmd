@@ -9,10 +9,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
+
+options(scipen=999)
 ```
 
 ## ATUS Data
 Reference for data descriptions: https://www.bls.gov/tus/data/datafiles-0324.htm
+
+Data files google drive: https://drive.google.com/drive/folders/1RYAvKluPasULGk68OPw5b8FkcoFuPK16?usp=drive_link
 
 ```{r import}
 resp <- read.delim('atusresp-0324/atusresp_0324.dat', sep=",")
@@ -51,7 +55,7 @@ activity <- activity |> rename(id = TUCASEID,
                    activity_line_num = TUACTIVITY_N,
                    activity = TRCODEP,
                    first_two_digits_activity = TRTIER1P,
-                   firist_four_digits_activity = TRTIER2P,
+                   first_four_digits_activity = TRTIER2P,
                    location = TEWHERE,
                    duration = TUACTDUR,
                    cum_duration =TUCUMDUR,
@@ -65,7 +69,6 @@ who <- who |> rename(id = TUCASEID,
               activity_line_num = TUACTIVITY_N,
               with_whom = TUWHO_CODE)
 
-# options(scipen=999)
 ```
 
 ```{r merge}
@@ -76,7 +79,7 @@ activity <- left_join(activity, resp, by = "id") #merge activity and resp data
 activity <- activity |> relocate(activity_line_num:with_whom, .after = last_col())
 ```
 
-```{r cleaning}
+```{r cleaning 1}
 activity$gender <- factor(activity$gender,
                                levels = c(1, 2),        
                                labels = c("M", "F"))
@@ -85,4 +88,42 @@ activity <- activity |> mutate(date = ymd(date))
 activity$day_of_wk <- factor(activity$day_of_wk,
                              levels = c(1:7),
                              labels = c("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"))
+
+```
+
+```{r cleaning 2}
+activity_2020_24 <- activity |> filter(year %in% 2020:2024) |> filter(first_two_digits_activity %in% c(11, 12, 13, 15, 18)) #filter from 2020 to 2024 & leisure-related activities
+
+# activity_2020_24 |> distinct(first_two_digits_activity) |> arrange(first_two_digits_activity)
+# activity_2020_24 |> distinct(first_four_digits_activity) |> arrange(first_four_digits_activity)
+# activity_2020_24 |> distinct(activity) |> arrange(activity)
+
+activity_2020_24 <- activity_2020_24 |> mutate(first_two_digits_classification = factor(activity_2020_24$first_two_digits_activity,
+                             levels = c(11, 12, 13, 15, 18),
+                             labels = c("Eating and Drinking", "Socializing, Relaxing, and Leisure", "Sports, Exercise, & Recreation", "Volunteer Activities", "Traveling"))) |> relocate(first_two_digits_classification, .after = first_two_digits_activity) # re-coding first two digits
+
+activity_2020_24 |> count(first_four_digits_activity)
+
+activity_2020_24 <- activity_2020_24 |> filter(first_four_digits_activity %in% c(1101, 1201, 1202, 1203, 1204, 1301, 1302, 1501, 1801, 1802, 1811, 1812, 1813, 1814, 1815)) # filtering leisure related activities
+
+activity_2020_24 <- activity_2020_24 |> mutate(first_four_digits_classifications = recode(first_four_digits_activity,
+                           `1101` = "Eating and Drinking",
+                           `1201` = "Socializing and Communicating",
+                           `1202` = "Attending or Hosting Social Events",
+                           `1203` = "Relaxing and Leisure",
+                           `1204` = "Arts and Entertainment",
+                           `1301` = "Participating in Sports, Exercise, and Recreation",
+                           `1302` = "Attending Sports/Recreational Events",
+                           `1501` = "Administrative & Support Activities",
+                           `1801` = "Travel Related to Personal Care",
+                           `1802` = "Travel Related to Household Activities",
+                           `1811` = "Travel Related to Eating and Drinking",
+                           `1812` = "Travel Related to Socializing, Relaxing, and Leisure",
+                           `1813` = "Travel Related to Sports, Exercise, and Recreation",
+                           `1814` = "Travel Related to Religious/Spiritual Activities",
+                           `1815` = "Travel Related to Volunteer Activities")) |> 
+  relocate(first_four_digits_classifications, .after = first_four_digits_activity) # labeling
+
+activity_2020_24 |> count(first_four_digits_classifications)
+# key activity code: 11, 12, 13 => need to recode them in detail.
 ```
