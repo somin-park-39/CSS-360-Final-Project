@@ -78,7 +78,7 @@ activity <- left_join(activity, resp, by = "id") #merge activity and resp data
 activity <- activity |> relocate(activity_line_num:with_whom, .after = last_col())
 ```
 
-```{r cleaning 1}
+```{r cleaning1}
 activity$gender <- factor(activity$gender,
                                levels = c(1, 2),        
                                labels = c("M", "F"))
@@ -90,7 +90,7 @@ activity$day_of_wk <- factor(activity$day_of_wk,
 
 ```
 
-```{r cleaning 2}
+```{r cleaning2}
 activity_2020_24 <- activity |> filter(year %in% 2020:2024) |> filter(first_two_digits_activity %in% c(11, 12, 13, 15, 18)) #filter from 2020 to 2024 & leisure-related activities
 
 # activity_2020_24 |> distinct(first_two_digits_activity) |> arrange(first_two_digits_activity)
@@ -113,7 +113,6 @@ activity_2020_24 <- activity_2020_24 |> mutate(first_four_digits_classifications
                            `1204` = "Arts and Entertainment",
                            `1301` = "Participating in Sports, Exercise, and Recreation",
                            `1302` = "Attending Sports/Recreational Events",
-                           `1501` = "Administrative & Support Activities",
                            `1801` = "Travel Related to Personal Care",
                            `1802` = "Travel Related to Household Activities",
                            `1811` = "Travel Related to Eating and Drinking",
@@ -121,8 +120,106 @@ activity_2020_24 <- activity_2020_24 |> mutate(first_four_digits_classifications
                            `1813` = "Travel Related to Sports, Exercise, and Recreation",
                            `1814` = "Travel Related to Religious/Spiritual Activities",
                            `1815` = "Travel Related to Volunteer Activities")) |> 
-  relocate(first_four_digits_classifications, .after = first_four_digits_activity) # labeling
+  relocate(first_four_digits_classifications, .after = first_four_digits_activity) # re-coding
 
 activity_2020_24 |> count(first_four_digits_classifications)
-# key activity code: 11, 12, 13 => need to recode them in detail.
+# key activity code: 12, 13 => need to recode them in detail.
+```
+
+```{r cleaning3}
+activity_2020_24 <- activity_2020_24 |>
+  mutate(activity_detail = recode(activity,
+                           `110101` = "Eating and Drinking",
+                           `120101` = "Socializing and Communicating with others",
+                           `120201` = "Attending or Hosting Social Events",
+                           `120301` = "Relaxing, thinking",
+                           `120303` = "Television and movies",
+                           `120304` = "Television and movies",
+                           `120305` = "Listening to the radio",
+                           `120306` = "Listening to/playing music",
+                           `120307` = "Playing games",
+                           `120309` = "Arts and crafts as a hobby",
+                           `120310` = "Collecting as a hobby",
+                           `120312` = "Reading for personal interest",
+                           `120313` = "Writing for personal interest",
+                           `120401` = "Attending performing arts",
+                           `120402` = "Attending museums",
+                           `120403` = "Attending movies/film",
+                           `120404` = "Attending gambling establishments",
+                           `130101` = "Doing aerobics",
+                           `130102` = "Playing baseball",
+                           `130103` = "Playing basketball",
+                           `130104` = "Biking",
+                           `130105` = "Playing billiards",
+                           `130106` = "Boating",
+                           `130107` = "Bowling",
+                           `130108` = "Climbing, spelunking, caving",
+                           `130109` = "Dancing",
+                           `130110` = "Participating in equestrian sports",
+                           `130111` = "Fencing",
+                           `130112` = "Fishing",
+                           `130113` = "Playing football",
+                           `130115` = "Doing gymnastics",
+                           `130116` = "Hiking",
+                           `130117` = "Playing hockey",
+                           `130119` = "Participating in martial arts",
+                           `130120` = "Playing racquet sports",
+                           
+                           `130122` = "Roller skating, inline skating, skateboarding",
+                           `130224` = "Running",
+                           `130231` = "Walking",
+                           `180101` = "Travel related to personal care",
+                           `180280` = "Travel related to household activities",
+                           `181201` = "Travel related to socializing and communicating",
+                           .default = NA_character_)) |>
+  relocate(activity_detail, .after = activity) # re-coding
+```
+
+```{r cleaning4}
+activity_2020_24 <- activity_2020_24 |> mutate(location_detail = factor(activity_2020_24$location,
+                             levels = c(1:21, 30, 31, 32),
+                             labels = c("Respondent's home or yard",
+                                        "Respondent's workplace",
+                                        "Someone else's home",
+                                        "Restaurant or bar",
+                                        "Place of worship",
+                                        "Grocery store",
+                                        "Other store/mall",
+                                        "School",
+                                        "Outdoors away from home",
+                                        "Library",
+                                        "Tourist spots/other place",
+                                        "Car, truck, or motorcycle (driver)",
+                                        "Car, truck, or motorcycle (passenger)",
+                                        "Walking",
+                                        "Bus",
+                                        "Subway/train",
+                                        "Bicycle",
+                                        "Boat/ferry",
+                                        "Taxi/limousine service",
+                                        "Airplane",
+                                        "Other mode of transportation",
+                                        "Bank",
+                                        "Gym/health club",
+                                        "Post Office"
+                                        ))) |> relocate(location_detail, .after = location) # re-coding locations
+
+activity_2020_24$student_status <- factor(activity_2020_24$student_status,
+                               levels = c(1, 2),        
+                               labels = c("Yes", "No"))
+
+activity_2020_24$work_status <- factor(activity_2020_24$work_status,
+                               levels = c(1, 2, 3, 4, 5),        
+                               labels = c("Employed", "Employed", "Unemployed", "Unemployed", "Not in labor force"))
+```
+
+```{r inspect}
+activity_2020_24 |> filter(!is.na(activity_detail)) |> group_by(activity_detail) |> count() |> arrange(desc(n))
+
+activity_2020_24 |> filter(!is.na(location_detail)) |> group_by(location_detail) |> count() |> arrange(desc(n))
+
+activity_2020_24 |> filter(!is.na(location_detail) & !is.na(activity_detail)) |> group_by(location_detail, activity_detail) |> count() |> arrange(desc(n))
+
+activity_2020_24 |> filter(activity == 120402)
+activity_2020_24 |> filter(location_detail == "Tourist spots/other place") |> group_by(activity_detail) |> count() |> arrange(desc(n))
 ```
