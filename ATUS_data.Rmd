@@ -68,7 +68,6 @@ who <- who |> select(TUCASEID, TUACTIVITY_N, TUWHO_CODE)
 who <- who |> rename(id = TUCASEID,
               activity_line_num = TUACTIVITY_N,
               with_whom = TUWHO_CODE)
-
 ```
 
 ```{r merge}
