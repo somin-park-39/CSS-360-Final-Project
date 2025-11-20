@@ -46,11 +46,14 @@ links <- page %>%
 event_links <- paste0("https://www.meetup.com", links)
 event_links <- unique(event_links)
 
-event_links <- all_links[grepl("/events/", all_links)]
+event_links <- event_links[grepl("/events/", event_links)]
 #event_links <- paste0("https://www.meetup.com", event_links)
-event_links <- unique(event_links)
+#event_links <- unique(event_links)
 cat("Found", length(event_links), "event links\n")
 #event_details <- lapply(event_links)
+
+#working on getting fixing the links bc they were working yesterday
+#UGH THIS ISNT WORKING UGHHHHGHGHGHGHGHGHGHGH
 ```
 
 ```{r groups & date w/time}
