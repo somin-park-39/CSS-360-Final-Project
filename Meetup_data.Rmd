@@ -6,67 +6,86 @@ output: html_document
 ---
 
 ```{r import}
+#I used chromote bc Meetup.com mostly rendered w/ JavaScript and 
+#this was the best way I could scrape the website. Rvest is also there
+#for the HTML but chromote runs a real headless Chrome browser within 
+#R.
+library(chromote)
 library(rvest)
 library(dplyr)
 library(stringr)
-url <- "https://www.meetup.com/find/?keywords=art&location=us--nj--New+Brunswick&source=EVENTS"
-page <- read_html(url)
+
+#Here a new chromote session runs 
+#watched this video for help w/the package-> https://www.youtube.com/watch?v=30AOpjLeOyI
+b <- ChromoteSession$new()
+
+search_url <- "https://www.meetup.com/find/?keywords=art&location=us--nj--New+Brunswick&source=EVENTS"
+#Here is where chromote loads the meetup.com URL in a headless/remote
+#browser b/c it need to render the JavaScript content that rvest can't.
+b$Page$navigate(search_url)
+Sys.sleep(5)
+          
+
+html <- b$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page <- read_html(html)
 ```
 
-```{r date w/time}
-dates <- 
-  page %>%
-    html_nodes("time") %>%
-    html_text(trim = TRUE)
-
-head(dates)
+```{r name}
+#Getting the event name
+event_name <- page %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
 ```
 
-```{r group/location}
-groups <- 
-  page %>%
-    html_nodes(".text--labelSecondary a") %>%
-    html_text(trim = TRUE)
+```{r links}
+#Getting clickable links to each indiviual event
+links <- page %>% 
+  html_nodes("h3 a") %>% 
+  html_attr("href")
+#paste0() used to combine the domain w/the relative path
+event_links <- paste0("https://www.meetup.com", links)
+event_links <- unique(event_links)
 
-locations <- 
-  page %>%
-    html_nodes(".venueDisplay-venue-address") %>%
-    html_text(trim = TRUE)
+event_links <- all_links[grepl("/events/", all_links)]
+#event_links <- paste0("https://www.meetup.com", event_links)
+event_links <- unique(event_links)
+cat("Found", length(event_links), "event links\n")
+#event_details <- lapply(event_links)
+```
 
-head(groups)
-head(locations)
+```{r groups & date w/time}
+#Getting group name, organizer of event
+groups <- page %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+
+#Getting date of event w/time
+#Working on getting year to see stats patterns b/w upcoming events
+#and past events.
+dates <- page %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
 ```
 
 ```{r}
-titles <- 
-  page %>%
-    html_nodes("h3") %>%
-    html_text(trim = TRUE)
+#Determing longest vector b/w scraper columns of data sicne data.frame
+#can't combine different length vectors.
+max_len <- max(length(event_name), length(event_links), length(groups), length(dates))
 
-length(titles)
-length(dates)
-length(groups)
-length(locations)
+pad <- function(x, n) { length(x) <- n; x }
 
-cat("Titles:", length(titles), " Groups:", length(groups),
-    " Locations:", length(locations), " Dates:", length(dates), "\n")
+event_name <- pad(event_name, max_len)
+event_links <- pad(event_links, max_len)
+groups <- pad(groups, max_len)
+dates <- pad(dates, max_len)
 
-min_len <- min(length(titles), length(groups), length(locations), length(dates))
-if (min_len == 0) {
-  print("1 or more fields returned 0 results")
-}
-
-titles <- titles[1:min_len]
-groups <- groups[1:min_len]
-locations <- locations[1:min_len]
-dates <- dates[1:min_len]
-
-meetups <- data.frame(
-  title = titles,
-  date = dates,
+events_df <- data.frame(
+  event_name = event_name,
   group = groups,
-  location = locations,
+  date = dates,
+  link = event_links,
   stringsAsFactors = FALSE
 )
-print(meetups)
+
+events_df
 ```
