@@ -1,100 +1,68 @@
 library(shiny)
-## professors code for reference
+library(DT)
+
 ui <- fluidPage(
-  
-  titlePanel(title = "Interactive correlation plots"),
-  
+  # Title
+  titlePanel(title = "Leisure Activity Suggestion App Prototype"),
   sidebarLayout(
-    
     sidebarPanel(
-      
-      selectInput(inputId = "var_x",
-                  label = "Select X:",
-                  choices = colnames(data)[-2]),
-      
-      selectInput(inputId = "var_y",
-                  label = "Select Y:",
-                  choices = rev(colnames(data)[-2])),
-      
-      selectInput(inputId = "var_z",
-                  label = "Select variable for color:",
-                  choices = colnames(data)[-1]),
+      # Age
+      sliderInput(
+        inputId = "age_range",
+        label = "Select your age:",
+        min = 15,
+        max = 85,
+        value = c(18, 30),
+        step = 1
+      ),
+      # Activity Type
+      selectInput(
+        inputId = "activity_type",
+        label = "What type of activity do you want to do?",
+        choices = c(
+          "Any",
+          sort(unique(ATUS_data$first_two_digits_classification)),
+          sort(unique(ATUS_data$first_four_digits_classifications))
+        ),
+        selected = "Any"
+      ),
+      # Location Preference
+      selectInput(
+        inputId = "location_pref",
+        label = "Where would you like to do your activity?",
+        choices = c("Any Location", sort(unique(ATUS_data$location_detail))),
+        selected = "Any Location"
+      ),
+      # Day of Week
+      selectInput(
+        inputId = "day_of_wk",
+        label = "What day of the week will you do your activity?",
+        choices = c("Any day", unique(ATUS_data$day_of_wk)),
+        selected = "Any day"
+      ),
+      # Free Time
+      sliderInput(
+        inputId = "free_time",
+        label = "How much free time do you have?",
+        min = 1,
+        max = 1435,
+        value = 1,
+        step = 5
+      ),
+      selectInput(
+        inputId = "time_unit",
+        label = "Is that in minutes or hours?",
+        choices = c("Minutes", "Hours"),
+        selected = "Minutes"
+      ),
     ),
     mainPanel(
-      
-      plotOutput("correlation_plot"),
-      
-      tableOutput("data_head"),
-      
-      textOutput("correlation")
-      
-      
-    )
-  )
-)
-
-## ui reference code for input
-
-fluidPage(
-  titlePanel("Changing the values of inputs from the server"),
-  fluidRow(
-    column(3, wellPanel(
-      h4("These inputs control the other inputs on the page"),
-      textInput("control_label",
-                "This controls some of the labels:",
-                "LABEL TEXT"),
-      sliderInput("control_num",
-                  "This controls values:",
-                  min = 1, max = 20, value = 15)
-    )),
-    
-    column(3, wellPanel(
-      textInput("inText",  "Text input:", value = "start text"),
-      
-      numericInput("inNumber", "Number input:",
-                   min = 1, max = 20, value = 5, step = 0.5),
-      numericInput("inNumber2", "Number input 2:",
-                   min = 1, max = 20, value = 5, step = 0.5),
-      
-      sliderInput("inSlider", "Slider input:",
-                  min = 1, max = 20, value = 15),
-      sliderInput("inSlider2", "Slider input 2:",
-                  min = 1, max = 20, value = c(5, 15)),
-      sliderInput("inSlider3", "Slider input 3:",
-                  min = 1, max = 20, value = c(5, 15)),
-      
-      dateInput("inDate", "Date input:"),
-      
-      dateRangeInput("inDateRange", "Date range input:")
-    )),
-    
-    column(3,
-           wellPanel(
-             checkboxInput("inCheckbox", "Checkbox input",
-                           value = FALSE),
-             
-             checkboxGroupInput("inCheckboxGroup",
-                                "Checkbox group input:",
-                                c("label 1" = "option1",
-                                  "label 2" = "option2")),
-             
-             radioButtons("inRadio", "Radio buttons:",
-                          c("label 1" = "option1",
-                            "label 2" = "option2")),
-             
-             selectInput("inSelect", "Select input:",
-                         c("label 1" = "option1",
-                           "label 2" = "option2")),
-             selectInput("inSelect2", "Select input 2:",
-                         multiple = TRUE,
-                         c("label 1" = "option1",
-                           "label 2" = "option2"))
-           ),
-           
-           tabsetPanel(id = "inTabset",
-                       tabPanel("panel1", h2("This is the first panel.")),
-                       tabPanel("panel2", h2("This is the second panel."))
-           )
+      h3("Suggested activity based on ATUS"),
+      textOutput("activity_text"),
+      br(),
+      h3("Local Meetup events"),
+      textOutput("meetup_message"),
+      DTOutput("meetup_table")
     )
   )
 )

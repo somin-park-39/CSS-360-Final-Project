@@ -1,157 +1,128 @@
 library(shiny)
-library(tidyverse)
-library(ggplot2)
+library(dplyr)
+library(DT)
 
-## Professors Code for Reference
-server <- function(input, output, global) {
-  
-  output$correlation_plot <- renderPlot({
-    ggplot(data=data, aes(x = .data[[input$var_x]], y = .data[[input$var_y]], color = as.factor(.data[[input$var_z]]))) +
-      geom_point() +
-      labs(x = input$var_x, y = input$var_y) +
-      theme_bw()
-  })
-  
-  output$correlation <- renderText({
-    paste("Correlation coefficient:", round(cor(data[[input$var_x]], data[[input$var_y]])[1],2), sep=" ")
-  }
-  )
-  output$data_head <- renderTable({data %>% group_by(sex) %>% summarize_all(mean)}, spacing = "xs")
-}
-
-## reference input code for server
-
-function(input, output, clientData, session) {
-  
-  observe({
-    # We'll use these multiple times, so use short var names for
-    # convenience.
-    c_label <- input$control_label
-    c_num <- input$control_num
-    
-    # Text =====================================================
-    # Change both the label and the text
-    updateTextInput(session, "inText",
-                    label = paste("New", c_label),
-                    value = paste("New text", c_num)
-    )
-    
-    # Number ===================================================
-    # Change the value
-    updateNumericInput(session, "inNumber", value = c_num)
-    
-    # Change the label, value, min, and max
-    updateNumericInput(session, "inNumber2",
-                       label = paste("Number ", c_label),
-                       value = c_num, min = c_num-10, max = c_num+10, step = 5)
-    
-    
-    # Slider input =============================================
-    # Only label and value can be set for slider
-    updateSliderInput(session, "inSlider",
-                      label = paste("Slider", c_label),
-                      value = c_num)
-    
-    # Slider range input =======================================
-    # For sliders that pick out a range, pass in a vector of 2
-    # values.
-    updateSliderInput(session, "inSlider2",
-                      value = c(c_num-1, c_num+1))
-    
-    # An NA means to not change that value (the low or high one)
-    updateSliderInput(session, "inSlider3",
-                      value = c(NA, c_num+2))
-    
-    
-    # Date input ===============================================
-    # Only label and value can be set for date input
-    updateDateInput(session, "inDate",
-                    label = paste("Date", c_label),
-                    value = paste("2013-04-", c_num, sep=""))
-    
-    
-    # Date range input =========================================
-    # Only label and value can be set for date range input
-    updateDateRangeInput(session, "inDateRange",
-                         label = paste("Date range", c_label),
-                         start = paste("2013-01-", c_num, sep=""),
-                         end = paste("2013-12-", c_num, sep=""),
-                         min = paste("2001-01-", c_num, sep=""),
-                         max = paste("2030-12-", c_num, sep="")
-    )
-    
-    # # Checkbox ===============================================
-    updateCheckboxInput(session, "inCheckbox",value = c_num %% 2)
-    
-    
-    # Checkbox group ===========================================
-    # Create a list of new options, where the name of the items
-    # is something like 'option label x A', and the values are
-    # 'option-x-A'.
-    cb_options <- list()
-    cb_options[[paste("option label", c_num, "A")]] <-
-      paste0("option-", c_num, "-A")
-    cb_options[[paste("option label", c_num, "B")]] <-
-      paste0("option-", c_num, "-B")
-    
-    # Set the label, choices, and selected item
-    updateCheckboxGroupInput(session, "inCheckboxGroup",
-                             label = paste("checkboxgroup", c_label),
-                             choices = cb_options,
-                             selected = paste0("option-", c_num, "-A")
-    )
-    
-    # Radio group ==============================================
-    # Create a list of new options, where the name of the items
-    # is something like 'option label x A', and the values are
-    # 'option-x-A'.
-    r_options <- list()
-    r_options[[paste("option label", c_num, "A")]] <-
-      paste0("option-", c_num, "-A")
-    r_options[[paste("option label", c_num, "B")]] <-
-      paste0("option-", c_num, "-B")
-    
-    # Set the label, choices, and selected item
-    updateRadioButtons(session, "inRadio",
-                       label = paste("Radio", c_label),
-                       choices = r_options,
-                       selected = paste0("option-", c_num, "-A")
-    )
-    
-    
-    # Select input =============================================
-    # Create a list of new options, where the name of the items
-    # is something like 'option label x A', and the values are
-    # 'option-x-A'.
-    s_options <- list()
-    s_options[[paste("option label", c_num, "A")]] <-
-      paste0("option-", c_num, "-A")
-    s_options[[paste("option label", c_num, "B")]] <-
-      paste0("option-", c_num, "-B")
-    
-    # Change values for input$inSelect
-    updateSelectInput(session, "inSelect",
-                      choices = s_options,
-                      selected = paste0("option-", c_num, "-A")
-    )
-    
-    
-    # Can also set the label and select an item (or more than
-    # one if it's a multi-select)
-    updateSelectInput(session, "inSelect2",
-                      label = paste("Select label", c_label),
-                      choices = s_options,
-                      selected = paste0("option-", c_num, "-B")
-    )
-    
-    
-    # Tabset input =============================================
-    # Change the selected tab.
-    # The tabsetPanel must have been created with an 'id' argument
-    if (c_num %% 2) {
-      updateTabsetPanel(session, "inTabset", selected = "panel2")
-    } else {
-      updateTabsetPanel(session, "inTabset", selected = "panel1")
+server <- function(input, output, session) {
+  # Convert free time to minutes because ATUS uses minutes
+  free_minutes <- reactive({
+    if (is.null(input$free_time) || is.null(input$time_unit)) {
+      return(NA_real_)
     }
+    if (input$time_unit == "Hours") {
+      input$free_time * 60
+    } else {
+      input$free_time
+    }
+  })
+  # Filtering ATUS data based on user's inputs
+  filtered_atus <- reactive({
+    data <- ATUS_data
+    # Filtering by age range
+    if (!is.null(input$age_range)) {
+      data <- data %>%
+        filter(
+          !is.na(age),
+          age >= input$age_range[1],
+          age <= input$age_range[2]
+        )
+    }
+    # Filtering by activity type
+    if (!is.null(input$activity_type) && input$activity_type != "Any") {
+      data <- data %>%
+        filter(
+          first_two_digits_classification == input$activity_type |
+            first_four_digits_classifications == input$activity_type)
+    }
+    # Filtering by location preference
+    if (!is.null(input$location_pref) && input$location_pref != "Any Location") {
+      data <- data %>%
+        filter(location_detail == input$location_pref)
+    }
+    # Filtering by day of the week
+    if (!is.null(input$day_of_wk) && input$day_of_wk != "Any day") {
+      data <- data %>%
+        filter(day_of_wk == input$day_of_wk)
+    }
+    # Filtering by duration
+    fm <- free_minutes()
+    if (!is.na(fm)) {
+      data <- data %>%
+        filter(!is.na(duration), duration <= fm)
+    }
+    data
+  })
+  # Choosing a suggested activity from the filtered ATUS data
+  suggested_activity <- reactive({
+    data <- filtered_atus()
+    if (nrow(data) == 0) {
+      return(NULL)
+    }
+    # Rows need activity details
+    data <- data %>% filter(!is.na(activity_detail))
+    if (nrow(data) == 0) {
+      return(NULL)
+    }
+    # Randomly sample one row (FOR NOW, might get more complicated later)
+    data %>% slice_sample(n = 1)
+  })
+  # Text output describing the suggested activity
+  output$activity_text <- renderText({
+    row <- suggested_activity()
+    if (is.null(row)) {
+      return("We couldn't find an activity that matches all of your choices.")
+    }
+    activity_name <- row$activity_detail[1]
+    location_name <- if (!is.null(row$location_detail[1]) && !is.na(row$location_detail[1])) row$location_detail[1] else "various locations"
+    duration_minutes <- if (!is.null(row$duration[1]) && !is.na(row$duration[1])) round(row$duration[1]) else NA_real_
+    
+    parts <- c(
+      paste0("Suggested Activity: ", activity_name, "."),
+      paste0("Suitable Location: ", location_name, ".")
+    )
+    if (!is.na(duration_minutes)) {
+      parts <- c(parts, paste0("People usually spend about ", duration_minutes, " minutes on this activity."))
+    }
+    paste(parts, collapse = " ")
+  })
+  # Meetup events (IN PROGRESS)
+  meetup_to_show <- reactive({
+    if (is.null(meetup_events) || nrow(meetup_events) == 0) {
+      return(NULL)
+    }
+    # Prototype only has art meetup data
+    if (!is.null(input$activity_type) &&
+        input$activity_type == "Arts and Entertainment") {
+      meetup_events
+    } else {
+      meetup_events[0, ]
+    }
+  })
+  # Message for meetup output (IN PROGRESS)
+  output$meetup_message <- renderText({
+    data <- meetup_to_show()
+    if (is.null(data) || nrow(data) == 0) {
+      "No matching Meetup events in this prototype, but here is your ATUS-based activity suggestion."
+    } else {
+      "Here are some local art-related Meetup events that might interest you:"
+    }
+  })
+  # Meetup events table (IN PROGRESS)
+  output$meetup_table <- renderDT({
+    data <- meetup_to_show()
+    req(!is.null(data), nrow(data) > 0, any(!is.na(data$event_name)))    
+    data <- data %>%
+      dplyr::select(event_name, group, date, link) %>%
+      mutate(
+        link = ifelse(
+          !is.na(link) & link != "",
+          paste0("<a href='", link, "' target='_blank'>Event link</a>"),
+          "No link available right now."
+        )
+      )
+    datatable(
+      data,
+      escape = FALSE,
+      options = list(pageLength = 5, lengthChange = FALSE)
+    )
   })
 }
