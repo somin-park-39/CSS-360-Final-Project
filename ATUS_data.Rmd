@@ -216,21 +216,55 @@ activity_2020_24$work_status <- factor(activity_2020_24$work_status,
 
 ```{r cleaning5 }
 # convert min to hours (nonwork time & duration & cum_duration)
-activity_2020_24 <- activity_2020_24 |> mutate(nonwork_time_hours = round(nonwork_time_alone / 60, 1)) |> relocate(nonwork_time_hours, .after = nonwork_time_alone)
+activity_2020_24 <- activity_2020_24 |>
+  mutate(nonwork_time_hours = round(nonwork_time_alone / 60, 1)) |>
+  relocate(nonwork_time_hours, .after = nonwork_time_alone)
 
-activity_2020_24 <- activity_2020_24 |> mutate(duration_hours = round(duration / 60, 1)) |> relocate(duration_hours, .after = duration)
+activity_2020_24 <- activity_2020_24 |>
+  mutate(duration_hours = round(duration / 60, 1)) |>
+  relocate(duration_hours, .after = duration)
 
-activity_2020_24 <- activity_2020_24 |> mutate(cum_duration_hours = round(cum_duration / 60, 1)) |> relocate(cum_duration_hours, .after = cum_duration)
+activity_2020_24 <- activity_2020_24 |>
+  mutate(cum_duration_hours = round(cum_duration / 60, 1)) |>
+  relocate(cum_duration_hours, .after = cum_duration)
+
+# added a season column
+activity_2020_24 <- activity_2020_24 |>
+  mutate(season = case_when(
+  month %in% c(12, 1, 2) ~ "winter",
+  month %in% c(3, 4, 5) ~ "spring",
+  month %in% c(6, 7, 8) ~ "summer",
+  month %in% c(9, 10, 11) ~ "fall",
+  TRUE ~ NA_character_
+  )) |> 
+  relocate(season, .before = month)
 ```
 
 ```{r inspect}
+# most frequent activities
 activity_2020_24 |> filter(!is.na(activity_detail)) |> group_by(activity_detail) |> count() |> arrange(desc(n))
 
+# most frequent locations
 activity_2020_24 |> filter(!is.na(location_detail)) |> group_by(location_detail) |> count() |> arrange(desc(n))
 
-activity_2020_24 |> filter(!is.na(location_detail) & !is.na(activity_detail)) |> group_by(location_detail, activity_detail) |> count() |> arrange(desc(n))
+# top 3 activities for each location
+activity_2020_24 |> 
+  filter(!is.na(location_detail) & !is.na(activity_detail)) |>
+  group_by(location_detail, activity_detail) |>
+  summarise(count = n(), .groups = 'drop') |>
+  group_by(location_detail) |> 
+  arrange(desc(count), .by_group = TRUE) |>
+  slice_head(n = 3)
 
-activity_2020_24 |> filter(activity == 120402)
+# top 3 activities for each season
+activity_2020_24 |> filter(!is.na(month) & !is.na(activity_detail)) |>
+  group_by(season, activity_detail) |> 
+  summarise(count = n(), .groups = 'drop') |>
+  group_by(season) |>
+  arrange(desc(count), .by_group = TRUE) |>
+  slice_head(n = 3)
+
+# Ppl usually do what in Tourist spots/other places
 activity_2020_24 |> filter(location_detail == "Tourist spots/other place") |> group_by(activity_detail) |> count() |> arrange(desc(n))
 ```
 
