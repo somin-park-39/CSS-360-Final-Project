@@ -213,6 +213,16 @@ activity_2020_24$work_status <- factor(activity_2020_24$work_status,
                                labels = c("Employed", "Employed", "Unemployed", "Unemployed", "Not in labor force"))
 ```
 
+
+```{r cleaning5 }
+# convert min to hours (nonwork time & duration & cum_duration)
+activity_2020_24 <- activity_2020_24 |> mutate(nonwork_time_hours = round(nonwork_time_alone / 60, 1)) |> relocate(nonwork_time_hours, .after = nonwork_time_alone)
+
+activity_2020_24 <- activity_2020_24 |> mutate(duration_hours = round(duration / 60, 1)) |> relocate(duration_hours, .after = duration)
+
+activity_2020_24 <- activity_2020_24 |> mutate(cum_duration_hours = round(cum_duration / 60, 1)) |> relocate(cum_duration_hours, .after = cum_duration)
+```
+
 ```{r inspect}
 activity_2020_24 |> filter(!is.na(activity_detail)) |> group_by(activity_detail) |> count() |> arrange(desc(n))
 
