@@ -19,7 +19,7 @@ library(stringr)
 #watched this video for help w/the package-> https://www.youtube.com/watch?v=30AOpjLeOyI
 b <- ChromoteSession$new()
 
-search_url <- "https://www.meetup.com/find/?keywords=art&location=us--nj--New+Brunswick&source=EVENTS"
+search_url <- "https://www.meetup.com/find/?location=us--nj--New+Brunswick&source=EVENTS"
 #Here is where chromote loads the meetup.com URL in a headless/remote
 #browser b/c it need to render the JavaScript content that rvest can't.
 b$Page$navigate(search_url)
@@ -53,7 +53,7 @@ cat("Found", length(event_links), "event links\n")
 #event_details <- lapply(event_links)
 
 #working on getting fixing the links bc they were working yesterday
-#UGH THIS ISNT WORKING UGHHHHGHGHGHGHGHGHGHGH
+
 ```
 
 ```{r groups & date w/time}
@@ -92,8 +92,3 @@ events_df <- data.frame(
 
 events_df
 ```
-
-```{r}
-write_csv(events_df, "meetup_art_events.csv")
-```
-
