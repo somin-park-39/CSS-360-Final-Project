@@ -92,3 +92,8 @@ events_df <- data.frame(
 
 events_df
 ```
+
+```{r}
+write_csv(events_df, "meetup_art_events.csv")
+```
+

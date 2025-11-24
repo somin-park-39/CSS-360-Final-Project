@@ -223,3 +223,8 @@ activity_2020_24 |> filter(!is.na(location_detail) & !is.na(activity_detail)) |>
 activity_2020_24 |> filter(activity == 120402)
 activity_2020_24 |> filter(location_detail == "Tourist spots/other place") |> group_by(activity_detail) |> count() |> arrange(desc(n))
 ```
+
+```{r}
+write_csv(activity_2020_24, "atus_activity_2020_24.csv")
+```
+
