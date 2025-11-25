@@ -4,27 +4,21 @@ library(DT)
 
 server <- function(input, output, session) {
   # Convert free time to minutes because ATUS uses minutes
-  free_minutes <- reactive({
-    if (is.null(input$free_time) || is.null(input$time_unit)) {
-      return(NA_real_)
-    }
-    if (input$time_unit == "Hours") {
-      input$free_time * 60
-    } else {
-      input$free_time
-    }
+  free_total_minutes <- reactive({
+    hrs <- input$free_hours
+    mins <- input$free_minutes
+    # Safety Checks
+    if (is.null(hrs) || is.null(mins)) return(NA_real_)
+    if (hrs < 0 || mins < 0) return(NA_real_)
+    hrs * 60 + mins
   })
   # Filtering ATUS data based on user's inputs
   filtered_atus <- reactive({
     data <- ATUS_data
     # Filtering by age range
-    if (!is.null(input$age_range)) {
+    if (!is.null(input$age_choice)) {
       data <- data %>%
-        filter(
-          !is.na(age),
-          age >= input$age_range[1],
-          age <= input$age_range[2]
-        )
+        filter(!is.na(age), age == input$age_choice)
     }
     # Filtering by activity type
     if (!is.null(input$activity_type) && input$activity_type != "Any") {
@@ -44,10 +38,9 @@ server <- function(input, output, session) {
         filter(day_of_wk == input$day_of_wk)
     }
     # Filtering by duration
-    fm <- free_minutes()
+    fm <- free_total_minutes()
     if (!is.na(fm)) {
-      data <- data %>%
-        filter(!is.na(duration), duration <= fm)
+      data <- data %>% filter(!is.na(duration), duration <= fm)
     }
     data
   })

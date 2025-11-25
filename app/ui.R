@@ -3,58 +3,58 @@ library(DT)
 
 ui <- fluidPage(
   # Title
-  titlePanel(title = "Leisure Activity Suggestion App Prototype"),
+  titlePanel("Leisure Activity Suggestion App Prototype"),
   sidebarLayout(
     sidebarPanel(
       # Age
-      sliderInput(
-        inputId = "age_range",
-        label = "Select your age:",
-        min = 15,
-        max = 85,
-        value = c(18, 30),
-        step = 1
+      selectInput(
+        inputId = "age_choice",
+        label   = "Select your age:",
+        choices = 15:85
       ),
       # Activity Type
       selectInput(
         inputId = "activity_type",
-        label = "What type of activity do you want to do?",
+        label   = "What type of activity do you want to do?",
         choices = c(
           "Any",
-          sort(unique(ATUS_data$first_two_digits_classification)),
-          sort(unique(ATUS_data$first_four_digits_classifications))
+          sort(unique(as.character(ATUS_data$first_two_digits_classification))),
+          sort(unique(as.character(ATUS_data$first_four_digits_classifications)))
         ),
         selected = "Any"
       ),
       # Location Preference
       selectInput(
         inputId = "location_pref",
-        label = "Where would you like to do your activity?",
+        label   = "Where would you like to do your activity?",
         choices = c("Any Location", sort(unique(ATUS_data$location_detail))),
         selected = "Any Location"
       ),
       # Day of Week
       selectInput(
         inputId = "day_of_wk",
-        label = "What day of the week will you do your activity?",
-        choices = c("Any day", unique(ATUS_data$day_of_wk)),
+        label   = "What day of the week will you do your activity?",
+        choices = c("Any day", as.character(unique(ATUS_data$day_of_wk))),
         selected = "Any day"
       ),
-      # Free Time
-      sliderInput(
-        inputId = "free_time",
-        label = "How much free time do you have?",
-        min = 1,
-        max = 1435,
-        value = 1,
-        step = 5
+      # Free Time – Hours
+      numericInput(
+        inputId = "free_hours",
+        label   = "How many HOURS of free time do you have?",
+        min     = 0,
+        max     = 24,
+        value   = 0,
+        step    = 1
       ),
-      selectInput(
-        inputId = "time_unit",
-        label = "Is that in minutes or hours?",
-        choices = c("Minutes", "Hours"),
-        selected = "Minutes"
-      ),
+      # Free Time – Minutes
+      numericInput(
+        inputId = "free_minutes",
+        label   = "How many MINUTES of free time do you have?",
+        min     = 0,
+        max     = 59,
+        value   = 0,
+        step    = 1
+      )
     ),
     mainPanel(
       h3("Suggested activity based on ATUS"),
