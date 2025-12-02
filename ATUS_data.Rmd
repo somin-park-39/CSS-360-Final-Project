@@ -354,6 +354,6 @@ activity_2020_24 |>
 ```
 
 ```{r}
-write_csv(activity_2020_24, "atus_activity_2020_24.csv")
+write_csv(activity_2020_24, "app/data/atus_activity_2020_24.csv")
 ```
 
