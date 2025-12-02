@@ -128,23 +128,21 @@ server <- function(input, output, session) {
         legend = list(title = list(text = "Category"))
       )
     })
+  
+  
   # Meetup events (IN PROGRESS)
   meetup_to_show <- reactive({
-    click_info <- event_data("plotly_click")
-    if (is.null(click_info)) 
-      return(NULL)
-    
-    row_index <- click_info$pointNumber + 1
-    current_map <- treemap()
-    clicked_category <- unlist(click_info$customdata)
-    
-    if (!is.null(clicked_category) && clicked_category %in% "Arts and Entertainment") {
-      return(meetup_table)
-    } else {
+    if (is.null(meetup_events) || nrow(meetup_events) == 0) {
       return(NULL)
     }
+    # Prototype only has art meetup data
+    if (!is.null(input$activity_type) &&
+        input$activity_type == "Arts and Entertainment") {
+      meetup_events
+    } else {
+      meetup_events[0, ]
+    }
   })
-
   # Message for meetup output (IN PROGRESS)
   output$meetup_message <- renderText({
     data <- meetup_to_show()
@@ -158,7 +156,7 @@ server <- function(input, output, session) {
   output$meetup_table <- renderDT({
     data <- meetup_to_show()
     req(!is.null(data), nrow(data) > 0, any(!is.na(data$event_name)))    
-    data %>%
+    data <- data %>%
       dplyr::select(event_name, group, date, link) %>%
       mutate(
         link = ifelse(
@@ -166,10 +164,11 @@ server <- function(input, output, session) {
           paste0("<a href='", link, "' target='_blank'>Event link</a>"),
           "No link available right now."
         )
-      ) %>%
+      )
     datatable(
+      data,
       escape = FALSE,
-      options = list(pageLength = 5, lengthChange = FALSE, dom='t')
+      options = list(pageLength = 5, lengthChange = FALSE)
     )
   })
 }
