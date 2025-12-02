@@ -6,7 +6,7 @@ library(plotly)
 server <- function(input, output, session) {
   # Filtering ATUS data based on user's inputs
   filtered_atus <- reactive({
-    data <- activity_2020_24
+    data <- ATUS_data
     # Filtering by age range
     if (input$age_choice != "All") {
       data <- data |>
