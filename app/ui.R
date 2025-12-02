@@ -11,20 +11,20 @@ ui <- fluidPage(
       selectInput(
         inputId = "age_choice",
         label   = "Select your age:",
-        choices = c("All", unique(as.character(activity_2020_24$age_group))),
+        choices = c("All", unique(as.character(ATUS_data$age_group))),
         selected = "All"),
       # Time Slot
       selectInput(
         inputId = "time_choice",
         label = "Select time slot:",
-        choices = c("All", unique(as.character(activity_2020_24$time_slot))),
+        choices = c("All", unique(as.character(ATUS_data$time_slot))),
         selected = "All"
       ),
       # Weekdays or Weekends
       radioButtons(
         inputId = "days_choice",
         label = "Select day option:",
-        choices = c("All", unique(as.character(activity_2020_24$wkday_wkend))),
+        choices = c("All", unique(as.character(ATUS_data$wkday_wkend))),
         selected = "All"
       ),
       
@@ -32,7 +32,7 @@ ui <- fluidPage(
       selectInput(
         inputId = "location_choice",
         label   = "Select your location:",
-        choices = c("All", unique(na.omit(as.character(activity_2020_24$location_detail)))),
+        choices = c("All", unique(na.omit(as.character(ATUS_data$location_detail)))),
         selected = "All"),
       
       hr(),
