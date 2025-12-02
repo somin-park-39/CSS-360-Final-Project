@@ -1,0 +1,1193 @@
+---
+title: "Meetup_data_NY"
+author: "Radhika Patel"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r import}
+library(chromote)
+library(rvest)
+library(dplyr)
+library(stringr)
+
+b <- ChromoteSession$new()
+
+search_url <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS"
+b$Page$navigate(search_url)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 5) {
+  for (i in 1:times) {
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+#Scrolling the page to get more events
+scroll_page(b, pause = 3, times = 15)
+
+html <- b$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page <- read_html(html)
+```
+
+```{r name}
+event_name <- page %>%
+  html_nodes("h3") %>%
+  html_text(trim = TRUE)
+```
+
+```{r links}
+#still not loading, coming up as N/A
+event_links <- page %>%
+  html_nodes("h3 a") %>%
+  html_attr("href")
+
+event_links <- event_links[!is.na(event_links)]
+event_links <- paste0("https://www.meetup.com", event_links)
+event_links <- event_links[grepl("/events/", event_links)]
+event_links <- unique(event_links)
+```
+
+```{r event groups}
+groups <- page %>%
+  html_nodes("h3 + div") %>%
+  html_text(trim = TRUE)
+```
+
+```{r date w/time}
+dates <- page %>%
+  html_nodes("time") %>%
+  html_text(trim = TRUE)
+```
+
+```{r gathering data}
+cat("Events found:", length(event_name), "\n")
+cat("Links found:", length(event_links), "\n")
+cat("Groups found:", length(groups), "\n")
+cat("Dates found:", length(dates), "\n")
+
+max_len <- max(length(event_name), 
+               length(event_links), 
+               length(groups), 
+               length(dates))
+
+pad <- function(x, n){length(x) <- n;x}
+
+event_name <- pad(event_name, max_len)
+#event_links <- pad(event_links, max_len)
+groups <- pad(groups, max_len)
+dates <- pad(dates, max_len)
+```
+
+```{r dataframe}
+events_df <- data.frame(
+  event_name = event_name,
+  group = groups,
+  date = dates,
+  #link = event_links,
+  stringsAsFactors = FALSE
+)
+
+options(dplyr.print_max = 500)
+options(tibble.width = Inf)
+
+events_df
+```
+
+```{r new group}
+url_ng <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=-999"
+
+page_ng <- read_html(url_ng)
+
+b2 <- ChromoteSession$new()
+b2$Page$navigate(url_ng)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b2, pause = 3, times = 15)
+
+html_ng <- b2$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_ng <- read_html(html_ng)
+
+#Getting new group event name, group, and dat w/time
+event_name_ng <- page_ng %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_ng <- page_ng %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_ng <- page_ng %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_ng <- max(length(event_name_ng), 
+                  length(groups_ng), 
+                  length(dates_ng))
+
+pad_ng <- function(x, n){length(x) <- n;x}
+
+event_name_ng <- pad_ng(event_name_ng, max_len_ng)
+groups_ng <- pad_ng(groups_ng, max_len_ng)
+dates_ng <- pad_ng(dates_ng, max_len_ng)
+
+events_df_ng <- data.frame(
+  event_name_ng = event_name_ng,
+  group_ng = groups_ng,
+  date_ng= dates_ng,
+  stringsAsFactors = FALSE
+)
+
+events_df_ng
+```
+
+```{r social activities}
+url_soc <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=652"
+
+page_soc <- read_html(url_soc)
+
+b3 <- ChromoteSession$new()
+b3$Page$navigate(url_soc)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b3, pause = 3, times = 15)
+
+html_soc <- b3$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_soc <- read_html(html_soc)
+
+event_name_soc <- page_soc %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_soc <- page_soc %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_soc <- page_soc %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_soc <- max(length(event_name_soc), 
+                  length(groups_soc), 
+                  length(dates_soc))
+
+pad_soc <- function(x, n){length(x) <- n;x}
+
+event_name_soc <- pad_soc(event_name_soc, max_len_soc)
+groups_soc <- pad_soc(groups_soc, max_len_soc)
+dates_soc <- pad_soc(dates_soc, max_len_soc)
+
+events_df_soc <- data.frame(
+  event_name_soc = event_name_soc,
+  group_soc = groups_soc,
+  date_soc = dates_soc,
+  stringsAsFactors = FALSE
+)
+
+events_df_soc
+```
+
+```{r hobbies and passions}
+url_hp <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=571"
+
+page_hp <- read_html(url_hp)
+
+b4 <- ChromoteSession$new()
+b4$Page$navigate(url_hp)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b4, pause = 3, times = 15)
+
+html_hp <- b4$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_hp <- read_html(html_hp)
+
+event_name_hp <- page_hp %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_hp <- page_hp %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_hp <- page_hp %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_hp <- max(length(event_name_hp), 
+                  length(groups_hp), 
+                  length(dates_hp))
+
+pad_hp <- function(x, n){length(x) <- n;x}
+
+event_name_hp <- pad_hp(event_name_hp, max_len_hp)
+groups_hp <- pad_hp(groups_hp, max_len_hp)
+dates_hp <- pad_hp(dates_hp, max_len_hp)
+
+events_df_hp <- data.frame(
+  event_name_hp = event_name_hp,
+  group_hp = groups_hp,
+  date_hp = dates_hp,
+  stringsAsFactors = FALSE
+)
+
+events_df_hp
+```
+
+```{r sports}
+url_sports <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=482"
+
+page_sports <- read_html(url_sports)
+
+b5 <- ChromoteSession$new()
+b5$Page$navigate(url_sports)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b5, pause = 3, times = 15)
+
+html_sports <- b5$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_sports <- read_html(html_sports)
+
+event_name_sports <- page_sports %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_sports <- page_sports %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_sports <- page_sports %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_sports <- max(length(event_name_sports), 
+                  length(groups_sports), 
+                  length(dates_sports))
+
+pad_sports <- function(x, n){length(x) <- n;x}
+
+event_name_sports <- pad_sports(event_name_sports, max_len_sports)
+groups_sports <- pad_sports(groups_sports, max_len_sports)
+dates_sports <- pad_sports(dates_sports, max_len_sports)
+
+events_df_sports <- data.frame(
+  event_name_sports = event_name_sports,
+  group_sports = groups_sports,
+  date_sports = dates_sports,
+  stringsAsFactors = FALSE
+)
+
+events_df_sports
+```
+
+```{r travel and outdoors}
+url_to <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=684"
+
+page_to <- read_html(url_to)
+
+b6 <- ChromoteSession$new()
+b6$Page$navigate(url_to)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b6, pause = 3, times = 15)
+
+html_to <- b6$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_to <- read_html(html_to)
+
+event_name_to <- page_to %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_to <- page_to %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_to <- page_to %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_to <- max(length(event_name_to), 
+                  length(groups_to), 
+                  length(dates_to))
+
+pad_to <- function(x, n){length(x) <- n;x}
+
+event_name_to <- pad_to(event_name_to, max_len_to)
+groups_to <- pad_to(groups_to, max_len_to)
+dates_to <- pad_to(dates_to, max_len_to)
+
+events_df_to <- data.frame(
+  event_name_to = event_name_to,
+  group_to = groups_to,
+  date_to = dates_to,
+  stringsAsFactors = FALSE
+)
+
+events_df_to
+```
+
+```{r career and business}
+url_cb <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=405"
+
+page_cb <- read_html(url_cb)
+
+b7 <- ChromoteSession$new()
+b7$Page$navigate(url_cb)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b7, pause = 3, times = 15)
+
+html_cb <- b7$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_cb <- read_html(html_cb)
+
+event_name_cb <- page_cb %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_cb <- page_cb %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_cb <- page_cb %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_cb <- max(length(event_name_cb), 
+                  length(groups_cb), 
+                  length(dates_cb))
+
+pad_cb <- function(x, n){length(x) <- n;x}
+
+event_name_cb <- pad_cb(event_name_cb, max_len_cb)
+groups_cb <- pad_cb(groups_cb, max_len_cb)
+dates_cb <- pad_cb(dates_cb, max_len_cb)
+
+events_df_cb <- data.frame(
+  event_name_cb = event_name_cb,
+  group_cb = groups_cb,
+  date_cb = dates_cb,
+  stringsAsFactors = FALSE
+)
+
+events_df_cb
+```
+
+```{r technology}
+url_tech <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=546"
+
+page_tech <- read_html(url_tech)
+
+b8 <- ChromoteSession$new()
+b8$Page$navigate(url_tech)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b8, pause = 3, times = 15)
+
+html_tech <- b8$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_tech <- read_html(html_tech)
+
+event_name_tech <- page_tech %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_tech <- page_tech %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_tech <- page_tech %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_tech <- max(length(event_name_tech), 
+                  length(groups_tech), 
+                  length(dates_tech))
+
+pad_tech <- function(x, n){length(x) <- n;x}
+
+event_name_tech <- pad_tech(event_name_tech, max_len_tech)
+groups_tech <- pad_tech(groups_tech, max_len_tech)
+dates_tech <- pad_tech(dates_tech, max_len_tech)
+
+events_df_tech <- data.frame(
+  event_name_tech = event_name_tech,
+  group_tech = groups_tech,
+  date_tech = dates_tech,
+  stringsAsFactors = FALSE
+)
+
+events_df_tech
+```
+
+```{r community and environment}
+url_ce <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=604"
+
+page_ce <- read_html(url_ce)
+
+b9 <- ChromoteSession$new()
+b9$Page$navigate(url_ce)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b9, pause = 3, times = 15)
+
+html_ce <- b9$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_ce <- read_html(html_ce)
+
+event_name_ce <- page_ce %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_ce <- page_ce %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_ce <- page_ce %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_ce <- max(length(event_name_ce), 
+                  length(groups_ce), 
+                  length(dates_ce))
+
+pad_ce <- function(x, n){length(x) <- n;x}
+
+event_name_ce <- pad_ce(event_name_ce, max_len_ce)
+groups_ce <- pad_ce(groups_ce, max_len_ce)
+dates_ce <- pad_ce(dates_ce, max_len_ce)
+
+events_df_ce <- data.frame(
+  event_name_ce = event_name_ce,
+  group_ce = groups_ce,
+  date_ce = dates_ce,
+  stringsAsFactors = FALSE
+)
+
+events_df_ce
+```
+
+```{r identity and language}
+url_il <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=622"
+
+page_il <- read_html(url_il)
+
+b10 <- ChromoteSession$new()
+b10$Page$navigate(url_il)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b10, pause = 3, times = 15)
+
+html_il <- b10$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_il <- read_html(html_il)
+
+event_name_il <- page_il %>% 
+  html_nodes("h3") %>%
+  html_text(trim = TRUE)
+groups_il <- page_il %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_il <- page_il %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_il <- max(length(event_name_il), 
+                  length(groups_il), 
+                  length(dates_il))
+
+pad_il <- function(x, n){length(x) <- n;x}
+
+event_name_il <- pad_il(event_name_il, max_len_il)
+groups_il <- pad_il(groups_il, max_len_il)
+dates_il <- pad_il(dates_il, max_len_il)
+
+events_df_il <- data.frame(
+  event_name_il = event_name_il,
+  group_il = groups_il,
+  date_il = dates_il,
+  stringsAsFactors = FALSE
+)
+
+events_df_il
+```
+
+```{r games}
+url_g <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=535"
+
+page_g <- read_html(url_g)
+
+b11 <- ChromoteSession$new()
+b11$Page$navigate(url_g)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b11, pause = 3, times = 15)
+
+html_g <- b11$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_g <- read_html(html_g)
+
+event_name_g <- page_g %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_g <- page_g %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_g <- page_g %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_g <- max(length(event_name_g), 
+                  length(groups_g), 
+                  length(dates_g))
+
+pad_g <- function(x, n){length(x) <- n;x}
+
+event_name_g <- pad_g(event_name_g, max_len_g)
+groups_g <- pad_g(groups_g, max_len_g)
+dates_g <- pad_g(dates_g, max_len_g)
+
+events_df_g <- data.frame(
+  event_name_g = event_name_g,
+  group_g = groups_g,
+  date_g = dates_g,
+  stringsAsFactors = FALSE
+)
+
+events_df_g
+```
+
+```{r dancing}
+url_d <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=612"
+
+page_d <- read_html(url_d)
+
+b12 <- ChromoteSession$new()
+b12$Page$navigate(url_d)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b12, pause = 3, times = 15)
+
+html_d <- b12$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_d <- read_html(html_d)
+
+event_name_d <- page_d %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_d <- page_d %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_d <- page_d %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_d <- max(length(event_name_d), 
+                  length(groups_d), 
+                  length(dates_d))
+
+pad_d <- function(x, n){length(x) <- n;x}
+
+event_name_d <- pad_d(event_name_d, max_len_d)
+groups_d <- pad_d(groups_d, max_len_d)
+dates_d <- pad_d(dates_d, max_len_d)
+
+events_df_d <- data.frame(
+  event_name_d = event_name_d,
+  group_d = groups_d,
+  date_d = dates_d,
+  stringsAsFactors = FALSE
+)
+
+events_df_d
+```
+
+```{r support and coaching}
+url_sc <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=449"
+
+page_sc <- read_html(url_sc)
+
+b13 <- ChromoteSession$new()
+b13$Page$navigate(url_sc)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b13, pause = 3, times = 15)
+
+html_sc <- b13$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_sc <- read_html(html_sc)
+
+event_name_sc <- page_sc %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_sc <- page_sc %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_sc <- page_sc %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_sc <- max(length(event_name_sc), 
+                  length(groups_sc), 
+                  length(dates_sc))
+
+pad_sc <- function(x, n){length(x) <- n;x}
+
+event_name_sc <- pad_sc(event_name_sc, max_len_sc)
+groups_sc <- pad_sc(groups_sc, max_len_sc)
+dates_sc <- pad_sc(dates_sc, max_len_sc)
+
+events_df_sc <- data.frame(
+  event_name_sc = event_name_sc,
+  group_sc = groups_sc,
+  date_sc = dates_sc,
+  stringsAsFactors = FALSE
+)
+
+events_df_sc
+```
+
+```{r music}
+url_mus <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=395"
+
+page_mus <- read_html(url_mus)
+
+b14 <- ChromoteSession$new()
+b14$Page$navigate(url_mus)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b14, pause = 3, times = 15)
+
+html_mus <- b14$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_mus <- read_html(html_mus)
+
+event_name_mus <- page_mus %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_mus <- page_mus %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_mus <- page_mus %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_mus <- max(length(event_name_mus), 
+                  length(groups_mus), 
+                  length(dates_mus))
+
+pad_mus <- function(x, n){length(x) <- n;x}
+
+event_name_mus <- pad_mus(event_name_mus, max_len_mus)
+groups_mus <- pad_mus(groups_mus, max_len_mus)
+dates_mus <- pad_mus(dates_mus, max_len_mus)
+
+events_df_mus <- data.frame(
+  event_name_mus = event_name_mus,
+  group_mus = groups_mus,
+  date_mus = dates_mus,
+  stringsAsFactors = FALSE
+)
+
+events_df_mus
+```
+
+```{r health and wellbeing}
+url_hw <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=511"
+
+page_hw <- read_html(url_hw)
+
+b15 <- ChromoteSession$new()
+b15$Page$navigate(url_hw)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b15, pause = 3, times = 15)
+
+html_hw <- b15$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_hw <- read_html(html_hw)
+
+event_name_hw <- page_hw %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_hw <- page_hw %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_hw <- page_hw %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_hw <- max(length(event_name_hw), 
+                  length(groups_hw), 
+                  length(dates_hw))
+
+pad_hw <- function(x, n){length(x) <- n;x}
+
+event_name_hw <- pad_hw(event_name_hw, max_len_hw)
+groups_hw <- pad_hw(groups_hw, max_len_hw)
+dates_hw <- pad_hw(dates_hw, max_len_hw)
+
+events_df_hw <- data.frame(
+  event_name_hw = event_name_hw,
+  group_hw = groups_hw,
+  date_hw = dates_hw,
+  stringsAsFactors = FALSE
+)
+
+events_df_hw
+```
+
+```{r art and culture}
+url_ac <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=521"
+
+page_ac <- read_html(url_ac)
+
+b16 <- ChromoteSession$new()
+b16 $Page$navigate(url_ac)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b16, pause = 3, times = 15)
+
+html_ac <- b16$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_ac <- read_html(html_ac)
+
+event_name_ac <- page_ac %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_ac <- page_ac %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_ac <- page_ac %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_ac <- max(length(event_name_ac), 
+                  length(groups_ac), 
+                  length(dates_ac))
+
+pad_ac <- function(x, n){length(x) <- n;x}
+
+event_name_ac <- pad_ac(event_name_ac, max_len_ac)
+groups_ac <- pad_ac(groups_ac, max_len_ac)
+dates_ac <- pad_ac(dates_ac, max_len_ac)
+
+events_df_ac <- data.frame(
+  event_name_ac = event_name_ac,
+  group_ac = groups_ac,
+  date_ac = dates_ac,
+  stringsAsFactors = FALSE
+)
+
+events_df_ac
+```
+
+```{r science and education}
+url_se <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=436"
+
+page_se <- read_html(url_se)
+
+b17 <- ChromoteSession$new()
+b17 $Page$navigate(url_se)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b17, pause = 3, times = 15)
+
+html_se <- b17$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_se <- read_html(html_se)
+
+event_name_se <- page_se %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_se <- page_se %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_se <- page_se %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_se <- max(length(event_name_se), 
+                  length(groups_se), 
+                  length(dates_se))
+
+pad_se <- function(x, n){length(x) <- n;x}
+
+event_name_se <- pad_se(event_name_se, max_len_se)
+groups_se <- pad_se(groups_se, max_len_se)
+dates_se <- pad_se(dates_se, max_len_se)
+
+events_df_se <- data.frame(
+  event_name_se = event_name_se,
+  group_se = groups_se,
+  date_se = dates_se,
+  stringsAsFactors = FALSE
+)
+
+events_df_se
+```
+
+```{r pets and animals}
+url_pa <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=701"
+
+page_pa <- read_html(url_pa)
+
+b18 <- ChromoteSession$new()
+b18 $Page$navigate(url_pa)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b18, pause = 3, times = 15)
+
+html_pa <- b18$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_pa <- read_html(html_pa)
+
+event_name_pa <- page_pa %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_pa <- page_pa %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_pa <- page_pa %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_pa <- max(length(event_name_pa), 
+                  length(groups_pa), 
+                  length(dates_pa))
+
+pad_pa <- function(x, n){length(x) <- n;x}
+
+event_name_pa <- pad_pa(event_name_pa, max_len_pa)
+groups_pa <- pad_pa(groups_pa, max_len_pa)
+dates_pa <- pad_pa(dates_pa, max_len_pa)
+
+events_df_pa <- data.frame(
+  event_name_pa = event_name_pa,
+  group_pa = groups_pa,
+  date_pa = dates_pa,
+  stringsAsFactors = FALSE
+)
+
+events_df_pa
+```
+
+```{r religion and spirituality}
+url_rs <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=593"
+
+page_rs <- read_html(url_rs)
+
+b19 <- ChromoteSession$new()
+b19 $Page$navigate(url_rs)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b19, pause = 3, times = 15)
+
+html_rs <- b19$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_rs <- read_html(html_rs)
+
+event_name_rs <- page_rs %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_rs <- page_rs %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_rs <- page_rs %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_rs <- max(length(event_name_rs), 
+                  length(groups_rs), 
+                  length(dates_rs))
+
+pad_rs <- function(x, n){length(x) <- n;x}
+
+event_name_rs <- pad_rs(event_name_rs, max_len_rs)
+groups_rs <- pad_rs(groups_rs, max_len_rs)
+dates_rs <- pad_rs(dates_rs, max_len_rs)
+
+events_df_rs <- data.frame(
+  event_name_rs = event_name_rs,
+  group_rs = groups_rs,
+  date_rs = dates_rs,
+  stringsAsFactors = FALSE
+)
+
+events_df_rs
+```
+
+```{r writing}
+url_w <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=467"
+
+page_w <- read_html(url_w)
+
+b20 <- ChromoteSession$new()
+b20 $Page$navigate(url_w)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b20, pause = 3, times = 15)
+
+html_w <- b20$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_w <- read_html(html_w)
+
+event_name_w <- page_w %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_w <- page_w %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_w <- page_w %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_w <- max(length(event_name_w), 
+                  length(groups_w), 
+                  length(dates_w))
+
+pad_w <- function(x, n){length(x) <- n;x}
+
+event_name_w <- pad_w(event_name_w, max_len_w)
+groups_w <- pad_w(groups_w, max_len_w)
+dates_w <- pad_w(dates_rs, max_len_w)
+
+events_df_w <- data.frame(
+  event_name_w = event_name_w,
+  group_w = groups_w,
+  date_w = dates_w,
+  stringsAsFactors = FALSE
+)
+
+events_df_w
+```
+
+```{r parents and family}
+url_pf <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=673"
+
+page_pf <- read_html(url_pf)
+
+b21 <- ChromoteSession$new()
+b21 $Page$navigate(url_pf)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b21, pause = 3, times = 15)
+
+html_pf <- b21$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_pf <- read_html(html_pf)
+
+event_name_pf <- page_pf %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_pf <- page_pf %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_pf <- page_pf %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_pf <- max(length(event_name_pf), 
+                  length(groups_pf), 
+                  length(dates_pf))
+
+pad_pf <- function(x, n){length(x) <- n;x}
+
+event_name_pf <- pad_pf(event_name_pf, max_len_pf)
+groups_pf <- pad_pf(groups_pf, max_len_pf)
+dates_pf <- pad_pf(dates_pf, max_len_pf)
+
+events_df_pf <- data.frame(
+  event_name_pf = event_name_pf,
+  group_pf = groups_pf,
+  date_pf = dates_pf,
+  stringsAsFactors = FALSE
+)
+
+events_df_pf
+```
+
+```{r movements and politics}
+url_mp <- "https://www.meetup.com/find/?location=us--ny--New+York+City&source=EVENTS&categoryId=642"
+
+page_mp <- read_html(url_mp)
+
+b22 <- ChromoteSession$new()
+b22 $Page$navigate(url_mp)
+Sys.sleep(5)
+
+scroll_page <- function(session, pause = 3, times = 10){
+  for(i in 1:times){
+    session$Runtime$evaluate("window.scrollBy(0, window.innerHeight);")
+    Sys.sleep(pause)
+  }
+}
+
+scroll_page(b22, pause = 3, times = 15)
+
+html_mp <- b22$Runtime$evaluate("document.documentElement.outerHTML")$result$value
+page_mp <- read_html(html_mp)
+
+event_name_mp <- page_mp %>% 
+  html_nodes("h3") %>% 
+  html_text(trim = TRUE)
+groups_mp <- page_mp %>% 
+  html_nodes("h3 + div") %>% 
+  html_text(trim = TRUE)
+dates_mp <- page_mp %>% 
+  html_nodes("time") %>% 
+  html_text(trim = TRUE)
+
+max_len_mp <- max(length(event_name_mp), 
+                  length(groups_mp), 
+                  length(dates_mp))
+
+pad_mp <- function(x, n){length(x) <- n;x}
+
+event_name_mp <- pad_mp(event_name_mp, max_len_mp)
+groups_mp <- pad_mp(groups_mp, max_len_mp)
+dates_mp <- pad_mp(dates_mp, max_len_mp)
+
+events_df_mp <- data.frame(
+  event_name_mp = event_name_mp,
+  group_mp = groups_mp,
+  date_mp = dates_mp,
+  stringsAsFactors = FALSE
+)
+
+events_df_mp
+```
+
+```{r summary}
+cat("Events found:", length(event_name), "\n")
+cat("Events found:", length(event_name_ng), "\n")
+cat("Events found:", length(event_name_soc), "\n")
+cat("Events found:", length(event_name_hp), "\n")
+cat("Events found:", length(event_name_sports), "\n")
+cat("Events found:", length(event_name_to), "\n")
+cat("Events found:", length(event_name_cb), "\n")
+cat("Events found:", length(event_name_tech), "\n")
+cat("Events found:", length(event_name_ce), "\n")
+cat("Events found:", length(event_name_il), "\n")
+cat("Events found:", length(event_name_g), "\n")
+cat("Events found:", length(event_name_d), "\n")
+cat("Events found:", length(event_name_sc), "\n")
+cat("Events found:", length(event_name_mus), "\n")
+cat("Events found:", length(event_name_hw), "\n")
+cat("Events found:", length(event_name_ac), "\n")
+cat("Events found:", length(event_name_se), "\n")
+cat("Events found:", length(event_name_pa), "\n")
+cat("Events found:", length(event_name_rs), "\n")
+cat("Events found:", length(event_name_w), "\n")
+cat("Events found:", length(event_name_pf), "\n")
+cat("Events found:", length(event_name_mp), "\n")
+```
