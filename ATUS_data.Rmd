@@ -351,8 +351,6 @@ activity_2020_24 |>
   group_by(age_group) |> 
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 5)
-
-activity_2020_24 |> colnames()
 ```
 
 ```{r}
