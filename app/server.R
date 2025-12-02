@@ -1,95 +1,150 @@
 library(shiny)
 library(dplyr)
 library(DT)
+library(plotly)
 
 server <- function(input, output, session) {
-  # Convert free time to minutes because ATUS uses minutes
-  free_total_minutes <- reactive({
-    hrs <- input$free_hours
-    mins <- input$free_minutes
-    # Safety Checks
-    if (is.null(hrs) || is.null(mins)) return(NA_real_)
-    if (hrs < 0 || mins < 0) return(NA_real_)
-    hrs * 60 + mins
-  })
   # Filtering ATUS data based on user's inputs
   filtered_atus <- reactive({
-    data <- ATUS_data
+    data <- activity_2020_24
     # Filtering by age range
-    if (!is.null(input$age_choice)) {
-      data <- data %>%
-        filter(!is.na(age), age == input$age_choice)
+    if (input$age_choice != "All") {
+      data <- data |>
+        filter(age_group == input$age_choice)
     }
-    # Filtering by activity type
-    if (!is.null(input$activity_type) && input$activity_type != "Any") {
-      data <- data %>%
-        filter(
-          first_two_digits_classification == input$activity_type |
-            first_four_digits_classifications == input$activity_type)
+    # Filtering by time slot
+    if (input$time_choice != "All") {
+      data <- data |>
+        filter(time_slot == input$time_choice)
     }
-    # Filtering by location preference
-    if (!is.null(input$location_pref) && input$location_pref != "Any Location") {
-      data <- data %>%
-        filter(location_detail == input$location_pref)
+    # Filtering by day options
+    if (input$days_choice != "All") {
+      data <- data |> filter(wkday_wkend == input$days_choice)
     }
-    # Filtering by day of the week
-    if (!is.null(input$day_of_wk) && input$day_of_wk != "Any day") {
-      data <- data %>%
-        filter(day_of_wk == input$day_of_wk)
-    }
-    # Filtering by duration
-    fm <- free_total_minutes()
-    if (!is.na(fm)) {
-      data <- data %>% filter(!is.na(duration), duration <= fm)
+    # Filtering by location
+    if (input$location_choice != "All") {
+      data <- data |> filter(location_detail == input$location_choice)
     }
     data
   })
-  # Choosing a suggested activity from the filtered ATUS data
-  suggested_activity <- reactive({
-    data <- filtered_atus()
-    if (nrow(data) == 0) {
-      return(NULL)
-    }
-    # Rows need activity details
-    data <- data %>% filter(!is.na(activity_detail))
-    if (nrow(data) == 0) {
-      return(NULL)
-    }
-    # Randomly sample one row (FOR NOW, might get more complicated later)
-    data %>% slice_sample(n = 1)
-  })
-  # Text output describing the suggested activity
-  output$activity_text <- renderText({
-    row <- suggested_activity()
-    if (is.null(row)) {
-      return("We couldn't find an activity that matches all of your choices.")
-    }
-    activity_name <- row$activity_detail[1]
-    location_name <- if (!is.null(row$location_detail[1]) && !is.na(row$location_detail[1])) row$location_detail[1] else "various locations"
-    duration_minutes <- if (!is.null(row$duration[1]) && !is.na(row$duration[1])) round(row$duration[1]) else NA_real_
+  # visualization: treemap
+  treemap <- reactive({
+    req(nrow(filtered_atus()) > 0)
     
-    parts <- c(
-      paste0("Suggested Activity: ", activity_name, "."),
-      paste0("Suitable Location: ", location_name, ".")
-    )
-    if (!is.na(duration_minutes)) {
-      parts <- c(parts, paste0("People usually spend about ", duration_minutes, " minutes on this activity."))
-    }
-    paste(parts, collapse = " ")
+    df <- filtered_atus()
+    
+    df <- df |> 
+      filter(!is.na(first_four_digits_classifications) & !is.na(activity_detail))
+    
+    parents <- df |> 
+      group_by(first_four_digits_classifications) |> 
+      summarize(
+        value = n(),
+        avg_duration = mean(duration_hours, na.rm = T)
+      ) |> 
+      mutate(
+        ids = first_four_digits_classifications,
+        labels = first_four_digits_classifications,
+        parents = "",
+        category_name = first_four_digits_classifications,
+        color_group = first_four_digits_classifications
+      )
+    
+    children <- df |> 
+      group_by(first_four_digits_classifications, activity_detail) |> 
+      summarize(
+        value = n(),
+        avg_duration = mean(duration_hours, na.rm = T),
+        .groups = "drop"
+      ) |> 
+      mutate(
+        ids = paste(first_four_digits_classifications, activity_detail, sep = " - "),
+        labels = activity_detail,
+        parents = first_four_digits_classifications,
+        category_name = first_four_digits_classifications,
+        color_group = first_four_digits_classifications
+      )
+    
+    bind_rows(parents, children)
   })
+  
+  output$treemapPlot <- renderPlotly({
+    plot_data <- treemap()
+    
+    plot_ly(
+      data = plot_data,
+      ids = ~ids,
+      labels = ~labels,
+      parents = ~parents,
+      values = ~value,
+      type = "treemap",
+      branchvalues = "total",
+      marker = list(colorscale = "Viridis"),
+      hovertemplate = paste(
+        "<b>%{label}</b><br>",
+        "count: %{value}<br>",
+        "average duration: %{customdata:.1f}hours<extra></extra>"
+      ),
+      customdata = ~avg_duration
+    ) |> 
+      layout(
+        title = "Activities Treemap",
+        margin = list(t=50, l=0, r=0, b=0)
+      )
+  })
+  
+  output$scatterPlot <- renderPlotly({
+    req(nrow(filtered_atus()) > 0)
+    scatter_data <- filtered_atus() |>
+      filter(!is.na(activity_detail)) |> 
+      group_by(activity_detail, first_four_digits_classifications) |> 
+      summarise(
+        mean_duration = mean(duration_hours, na.rm = TRUE),
+        frequency = n(),
+        .groups = "drop"
+      ) |> 
+      filter(frequency > 100)
+    plot_ly(
+      data = scatter_data,
+      x = ~mean_duration,
+      y = ~frequency,
+      type = 'scatter',
+      mode = 'markers',
+      size = ~frequency, 
+      color = ~first_four_digits_classifications,
+      colors = "Set2",
+      text = ~paste(
+        "<b>", activity_detail, "</b><br>",
+        "broad category:", first_four_digits_classifications, "<br>",
+        "average duration:", round(mean_duration, 1), "hours<br>",
+        "count:", frequency
+      ),
+      hoverinfo = "text"
+    ) |>
+      layout(
+        title = "Do you want short or long activities?",
+        xaxis = list(title = "Average Duration (hours)"),
+        yaxis = list(title = "Number of People Who Enjoy the Activity"),
+        legend = list(title = list(text = "Category"))
+      )
+    })
   # Meetup events (IN PROGRESS)
   meetup_to_show <- reactive({
-    if (is.null(meetup_events) || nrow(meetup_events) == 0) {
+    click_info <- event_data("plotly_click")
+    if (is.null(click_info)) 
+      return(NULL)
+    
+    row_index <- click_info$pointNumber + 1
+    current_map <- treemap()
+    clicked_category <- unlist(click_info$customdata)
+    
+    if (!is.null(clicked_category) && clicked_category %in% "Arts and Entertainment") {
+      return(meetup_table)
+    } else {
       return(NULL)
     }
-    # Prototype only has art meetup data
-    if (!is.null(input$activity_type) &&
-        input$activity_type == "Arts and Entertainment") {
-      meetup_events
-    } else {
-      meetup_events[0, ]
-    }
   })
+
   # Message for meetup output (IN PROGRESS)
   output$meetup_message <- renderText({
     data <- meetup_to_show()
@@ -103,7 +158,7 @@ server <- function(input, output, session) {
   output$meetup_table <- renderDT({
     data <- meetup_to_show()
     req(!is.null(data), nrow(data) > 0, any(!is.na(data$event_name)))    
-    data <- data %>%
+    data %>%
       dplyr::select(event_name, group, date, link) %>%
       mutate(
         link = ifelse(
@@ -111,11 +166,10 @@ server <- function(input, output, session) {
           paste0("<a href='", link, "' target='_blank'>Event link</a>"),
           "No link available right now."
         )
-      )
+      ) %>%
     datatable(
-      data,
       escape = FALSE,
-      options = list(pageLength = 5, lengthChange = FALSE)
+      options = list(pageLength = 5, lengthChange = FALSE, dom='t')
     )
   })
 }

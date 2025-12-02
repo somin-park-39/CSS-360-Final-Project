@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lubridate)
+library(ggplot2)
+library(plotly)
 
 options(scipen=999)
 ```
@@ -34,7 +36,7 @@ rost <- rost |> rename(id = TUCASEID,
                age = TEAGE,
                gender = TESEX)
 
-resp <- resp |> select(TUCASEID, TUDIARYDATE, TUYEAR, TUMONTH, TUDIARYDAY, TEHRUSLT, TELFS, TESCHENR, TRHHCHILD, TRMJOCC1, TRTALONE, TUFNWGTP, TU20FWGT)
+resp <- resp |> select(TUCASEID, TUDIARYDATE, TUYEAR, TUMONTH, TUDIARYDAY, TEHRUSLT, TELFS, TESCHENR, TRHHCHILD, TRMJOCC1, TRTALONE)
 resp <- resp |> rename(id = TUCASEID,
                date = TUDIARYDATE,
                year = TUYEAR,
@@ -45,9 +47,7 @@ resp <- resp |> rename(id = TUCASEID,
                student_status = TESCHENR,
                children_under_18 = TRHHCHILD,
                occupation = TRMJOCC1,
-               nonwork_time_alone = TRTALONE,
-               weight = TUFNWGTP,
-               weight_for_2020 = TU20FWGT
+               nonwork_time_alone = TRTALONE
                )
 
 activity <- activity |> select(TUCASEID, TUACTIVITY_N, TRCODEP, TRTIER1P, TRTIER2P, TEWHERE, TUACTDUR, TUCUMDUR, TUSTARTTIM, TUSTOPTIME, TUCC5)
@@ -91,19 +91,15 @@ activity$day_of_wk <- factor(activity$day_of_wk,
 ```
 
 ```{r cleaning2}
-activity_2020_24 <- activity |> filter(year %in% 2020:2024) |> filter(first_two_digits_activity %in% c(11, 12, 13, 15, 18)) #filter from 2020 to 2024 & leisure-related activities
-
-# activity_2020_24 |> distinct(first_two_digits_activity) |> arrange(first_two_digits_activity)
-# activity_2020_24 |> distinct(first_four_digits_activity) |> arrange(first_four_digits_activity)
-# activity_2020_24 |> distinct(activity) |> arrange(activity)
+activity_2020_24 <- activity |> filter(year %in% 2020:2024) |> filter(first_two_digits_activity %in% c(11, 12, 13, 18)) #filter from 2020 to 2024 & leisure-related activities
 
 activity_2020_24 <- activity_2020_24 |> mutate(first_two_digits_classification = factor(activity_2020_24$first_two_digits_activity,
-                             levels = c(11, 12, 13, 15, 18),
-                             labels = c("Eating and Drinking", "Socializing, Relaxing, and Leisure", "Sports, Exercise, & Recreation", "Volunteer Activities", "Traveling"))) |> relocate(first_two_digits_classification, .after = first_two_digits_activity) # re-coding first two digits
+                             levels = c(11, 12, 13, 18),
+                             labels = c("Eating and Drinking", "Socializing, Relaxing, and Leisure", "Sports, Exercise, & Recreation", "Traveling"))) |> relocate(first_two_digits_classification, .after = first_two_digits_activity) # re-coding first two digits
 
 activity_2020_24 |> count(first_four_digits_activity)
 
-activity_2020_24 <- activity_2020_24 |> filter(first_four_digits_activity %in% c(1101, 1201, 1202, 1203, 1204, 1301, 1302, 1501, 1801, 1802, 1811, 1812, 1813, 1814, 1815)) # filtering leisure related activities
+activity_2020_24 <- activity_2020_24 |> filter(first_four_digits_activity %in% c(1101, 1201, 1202, 1203, 1204, 1301, 1302, 1801, 1802, 1811, 1812, 1813)) # filtering leisure related activities
 
 activity_2020_24 <- activity_2020_24 |> mutate(first_four_digits_classifications = recode(first_four_digits_activity,
                            `1101` = "Eating and Drinking",
@@ -113,13 +109,11 @@ activity_2020_24 <- activity_2020_24 |> mutate(first_four_digits_classifications
                            `1204` = "Arts and Entertainment",
                            `1301` = "Participating in Sports, Exercise, and Recreation",
                            `1302` = "Attending Sports/Recreational Events",
-                           `1801` = "Travel Related to Personal Care",
-                           `1802` = "Travel Related to Household Activities",
-                           `1811` = "Travel Related to Eating and Drinking",
-                           `1812` = "Travel Related to Socializing, Relaxing, and Leisure",
-                           `1813` = "Travel Related to Sports, Exercise, and Recreation",
-                           `1814` = "Travel Related to Religious/Spiritual Activities",
-                           `1815` = "Travel Related to Volunteer Activities")) |> 
+                           `1801` = "Traveling",
+                           `1802` = "Traveling",
+                           `1811` = "Traveling",
+                           `1812` = "Traveling",
+                           `1813` = "Traveling")) |> 
   relocate(first_four_digits_classifications, .after = first_four_digits_activity) # re-coding
 
 activity_2020_24 |> count(first_four_digits_classifications)
@@ -176,45 +170,74 @@ activity_2020_24 <- activity_2020_24 |>
 ```
 
 ```{r cleaning4}
+# location 
 activity_2020_24 <- activity_2020_24 |> mutate(location_detail = factor(activity_2020_24$location,
-                             levels = c(1:21, 30, 31, 32),
+                             levels = c(1:5, 7:11, 14:17, 31),
                              labels = c("Respondent's home or yard",
                                         "Respondent's workplace",
                                         "Someone else's home",
                                         "Restaurant or bar",
                                         "Place of worship",
-                                        "Grocery store",
                                         "Other store/mall",
                                         "School",
                                         "Outdoors away from home",
                                         "Library",
                                         "Tourist spots/other place",
-                                        "Car, truck, or motorcycle (driver)",
-                                        "Car, truck, or motorcycle (passenger)",
                                         "Walking",
                                         "Bus",
                                         "Subway/train",
                                         "Bicycle",
-                                        "Boat/ferry",
-                                        "Taxi/limousine service",
-                                        "Airplane",
-                                        "Other mode of transportation",
-                                        "Bank",
-                                        "Gym/health club",
-                                        "Post Office"
-                                        ))) |> relocate(location_detail, .after = location) # re-coding locations
+                                        "Gym/health club"
+                                        ))) |> 
+  relocate(location_detail, .after = location) # re-coding locations
 
+activity_2020_24 |> group_by(location_detail) |> summarize(n())
+
+#remove NA from location_detail & activity_detail
+##activity_2020_24 <- activity_2020_24 |> na.omit(location_detail)
+##activity_2020_24 <- activity_2020_24 |> na.omit(activity_detail)
+
+# student status 
 activity_2020_24$student_status <- factor(activity_2020_24$student_status,
                                levels = c(1, 2),        
                                labels = c("Yes", "No"))
 
+# work status
 activity_2020_24$work_status <- factor(activity_2020_24$work_status,
                                levels = c(1, 2, 3, 4, 5),        
                                labels = c("Employed", "Employed", "Unemployed", "Unemployed", "Not in labor force"))
+
+# age categorization
+activity_2020_24 <- activity_2020_24 |> 
+  mutate(age_group = cut(age, 
+                         breaks = c(-Inf, 18, 25, 45, 60, Inf), 
+                         labels = c("under 18", "18-24", "25-44", "45-59", "60 or older"),
+                         right = FALSE)) |>
+  relocate(age_group, .before = age)
+
+activity_2020_24 |> group_by(age_group) |> summarise(n())
+
+activity_2020_24 <- activity_2020_24 |> 
+  mutate(wkday_wkend = case_when(
+    day_of_wk %in% c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday") ~ "weekdays",
+    day_of_wk %in% c("Saturday", "Sunday") ~ "weekends")) |> 
+  relocate(wkday_wkend, .before = day_of_wk)
+
+# morning / afternoon / night activities
+activity_2020_24 <- activity_2020_24 |> 
+  mutate(start_hour = hour(hms(start_time)),
+         time_slot = case_when(
+           start_hour >= 5 & start_hour < 12 ~ "morning",
+           start_hour >= 12 & start_hour < 18 ~ "afternoon",
+           TRUE ~ "night"
+           )
+         ) |> 
+  mutate(time_slot = factor(time_slot, levels = c("morning", "afternoon", "night"))) |>
+  relocate(c(start_hour, time_slot), .after = start_time)
 ```
 
 
-```{r cleaning5 }
+```{r cleaning5}
 # convert min to hours (nonwork time & duration & cum_duration)
 activity_2020_24 <- activity_2020_24 |>
   mutate(nonwork_time_hours = round(nonwork_time_alone / 60, 1)) |>
@@ -240,9 +263,33 @@ activity_2020_24 <- activity_2020_24 |>
   relocate(season, .before = month)
 ```
 
-```{r inspect}
-# most frequent activities
-activity_2020_24 |> filter(!is.na(activity_detail)) |> group_by(activity_detail) |> count() |> arrange(desc(n))
+```{r observations}
+activity_2020_24 |>
+  group_by(first_four_digits_classifications, activity_detail) |> count(sort = T) |> arrange(desc(n))
+
+# Top activities
+activity_2020_24 |>
+  filter(!is.na(first_two_digits_classification)) |>
+  count(first_two_digits_classification, sort = T)
+
+activity_2020_24 |>
+  filter(!is.na(first_four_digits_classifications)) |>
+  count(first_four_digits_classifications, sort = T)
+
+# top 10 activities
+activity_2020_24 |>
+  filter(!is.na(activity_detail)) |>
+  count(activity_detail, sort = T) |>
+  head(10) |> 
+  ggplot(aes(x = reorder(activity_detail, n), y = n)) +
+  geom_col(fill = "skyblue", width = 0.7) +
+  coord_flip() +
+  theme_minimal() +
+  labs(
+    title = "Top 10 Most Frequent Activities",
+    x = "",
+    y = "Frequency (Count)"
+  )
 
 # most frequent locations
 activity_2020_24 |> filter(!is.na(location_detail)) |> group_by(location_detail) |> count() |> arrange(desc(n))
@@ -264,8 +311,48 @@ activity_2020_24 |> filter(!is.na(month) & !is.na(activity_detail)) |>
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 3)
 
+# Top 5 activities by age group
+activity_2020_24 |> 
+  filter(!is.na(age_group) & !is.na(activity_detail)) |>
+  group_by(age_group, activity_detail) |>
+  summarise(count = n(), .groups = 'drop') |>
+  group_by(age_group) |> 
+  arrange(desc(count), .by_group = TRUE) |>
+  slice_head(n = 5)
+
+# Activity proportion by age group
+activity_2020_24 |>
+  filter(!is.na(age_group) & !is.na(first_four_digits_classifications)) |>
+  count(age_group, first_four_digits_classifications) |>
+  filter(n > 300) |>
+  group_by(age_group) |>
+  mutate(prop = n / sum(n)) |> 
+  ggplot(aes(x = age_group, y = prop, fill = first_four_digits_classifications)) +
+  geom_col(position = "fill", width = 0.7) +
+  scale_y_continuous(labels = scales::percent) +
+  theme_minimal() +
+  labs(
+    title = "Activity Proportion by Age Group",
+    x = "Age Group",
+    y = "Proportion",
+    fill = "Activity Category"
+  )
+
 # Ppl usually do what in Tourist spots/other places
-activity_2020_24 |> filter(location_detail == "Tourist spots/other place") |> group_by(activity_detail) |> count() |> arrange(desc(n))
+activity_2020_24 |> filter(location_detail == "Tourist spots/other place" & !is.na(activity_detail)) |> group_by(activity_detail) |> count() |> arrange(desc(n))
+```
+
+```{r visualization}
+# activities by age group
+activity_2020_24 |> 
+  filter(!is.na(age_group) & !is.na(activity_detail)) |>
+  group_by(age_group, activity_detail) |>
+  summarise(count = n(), .groups = 'drop') |>
+  group_by(age_group) |> 
+  arrange(desc(count), .by_group = TRUE) |>
+  slice_head(n = 5)
+
+activity_2020_24 |> colnames()
 ```
 
 ```{r}
