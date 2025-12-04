@@ -285,13 +285,24 @@ activity_2020_24 |>
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 3)
 
-# top 3 activities for each season
-activity_2020_24 |> filter(!is.na(month) & !is.na(activity_detail)) |>
-  group_by(season, activity_detail) |> 
-  summarise(count = n(), .groups = 'drop') |>
-  group_by(season) |>
+# top 5 activities and duration for each time slot based on student status
+activity_2020_24 |> filter(student_status == "Yes" & !is.na(time_slot) & !is.na(activity_detail)) |>
+  group_by(time_slot, activity_detail) |> 
+  summarise(count = n(),
+            avg_duration = mean(duration_hours),
+            .groups = 'drop') |>
+  group_by(time_slot) |>
   arrange(desc(count), .by_group = TRUE) |>
-  slice_head(n = 3)
+  slice_head(n = 5)
+
+activity_2020_24 |> filter(student_status == "No" & !is.na(time_slot) & !is.na(activity_detail)) |>
+  group_by(time_slot, activity_detail) |> 
+  summarise(count = n(),
+            avg_duration = mean(duration_hours),
+            .groups = 'drop') |>
+  group_by(time_slot) |>
+  arrange(desc(count), .by_group = TRUE) |>
+  slice_head(n = 5)
 
 # Top 5 activities by age group
 activity_2020_24 |> 
