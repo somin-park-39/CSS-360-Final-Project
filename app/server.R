@@ -129,46 +129,43 @@ server <- function(input, output, session) {
       )
     })
   
-  
-  # Meetup events (IN PROGRESS)
+  # meetup.com Events
   meetup_to_show <- reactive({
-    if (is.null(meetup_events) || nrow(meetup_events) == 0) {
-      return(NULL)
+    if (!exists("meetup_events")) return(NULL)
+    data <- meetup_events
+    if (is.null(data) || nrow(data) == 0) return(NULL)
+    
+        if (is.null(input$activity_category)) {
+      return(data)
     }
-    # Prototype only has art meetup data
-    if (!is.null(input$activity_type) &&
-        input$activity_type == "Arts and Entertainment") {
-      meetup_events
+    
+    if ("category" %in% names(data)) {
+      data |> filter(category == input$activity_category)
     } else {
-      meetup_events[0, ]
+      data
     }
   })
-  # Message for meetup output (IN PROGRESS)
+  
   output$meetup_message <- renderText({
     data <- meetup_to_show()
+    
     if (is.null(data) || nrow(data) == 0) {
-      "No matching Meetup events in this prototype, but here is your ATUS-based activity suggestion."
+      paste("No events found for category:", input$activity_category)
     } else {
-      "Here are some local art-related Meetup events that might interest you:"
+      paste("Showing NYC meetup.com", input$activity_category, "events:")
     }
   })
-  # Meetup events table (IN PROGRESS)
+  
   output$meetup_table <- renderDT({
     data <- meetup_to_show()
-    req(!is.null(data), nrow(data) > 0, any(!is.na(data$event_name)))    
-    data <- data %>%
-      dplyr::select(event_name, group, date, link) %>%
-      mutate(
-        link = ifelse(
-          !is.na(link) & link != "",
-          paste0("<a href='", link, "' target='_blank'>Event link</a>"),
-          "No link available right now."
-        )
-      )
+    req(!is.null(data), nrow(data) > 0)    
+    
+    cols_to_keep <- c("event_name", "group", "date", "category")
+    data <- data %>% select(any_of(cols_to_keep))
+    
     datatable(
       data,
-      escape = FALSE,
-      options = list(pageLength = 5, lengthChange = FALSE)
+      options = list(pageLength = 10, lengthChange = FALSE)
     )
   })
 }

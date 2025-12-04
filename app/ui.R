@@ -49,13 +49,56 @@ ui <- fluidPage(
         tabPanel("Activities by Duration Hours",
                  br(),
                  p("x = Duration Hours, y = Number of People Who Enjoy the Activity"),
-                 plotlyOutput("scatterPlot", height = "600px"))),
+                 plotlyOutput("scatterPlot", height = "600px")),
       
-      # meetup
-      br(),
-      h3("Local Meetup events"),
-      textOutput("meetup_message"),
-      DTOutput("meetup_table")
+      # meetup.com code
+      tabPanel("NYC meetup.com Events",
+               br(),
+               sidebarLayout(
+                 sidebarPanel(
+                   width = 3, 
+                   h4("Categories"),
+                   selectInput(
+                     inputId = "activity_category",
+                     label = "Select Activity Category:",
+                     choices = c(
+                       "General" = "General",
+                       "New Groups" = "New Group",
+                       "Socializing" = "Socializing",
+                       "Events, Hobbies, and Passions" = "Hobbies Passions",
+                       "Sports, Exercise, and Leisure" = "Sports Exercise Leisure",
+                       "Traveling and Outdoors" = "Traveling Outdoor",
+                       "Career and Business" = "Career Business",
+                       "Technology" = "Technology",
+                       "Community and Environment" = "Community Environment",
+                       "Identity and Language" = "Identity Language",
+                       "Games" = "Games",
+                       "Dancing" = "Dancing",
+                       "Support and Coaching" = "Support Coaching",
+                       "Music" = "Music",
+                       "Health and Wellbeing" = "Health Wellbeing",
+                       "Art and Entertainment" = "Art Entertainment",
+                       "Science and Education" = "Science Education",
+                       "Pets and Animals" = "Pets Animals",
+                       "Religion and Spirituality" = "Religion Spirituality",
+                       "Writing" = "Writing",
+                       "Parents and Family" = "Parents Family",
+                       "Movements and Politics" = "Movements Politics"
+                     ),
+                     selected = "General"
+                   ),
+                   p(class = "text-muted", "Filter for local NYC meetup.com events matching your interests!")
+                 ),
+                 mainPanel(
+                   width = 9,
+                   h4("Local NYC meetup.com Events"),
+                   textOutput("meetup_message"),
+                   br(),
+                   DTOutput("meetup_table")
+                 )
+               )
+        )
+      )
     )
   )
 )
