@@ -291,6 +291,7 @@ activity_2020_24 |> filter(student_status == "Yes" & !is.na(time_slot) & !is.na(
   summarise(count = n(),
             avg_duration = mean(duration_hours),
             avg_nonwork_time_hours = mean(nonwork_time_hours),
+            prop_avg_duration = mean(duration_hours) / mean(nonwork_time_hours),
             .groups = 'drop') |>
   group_by(time_slot) |>
   arrange(desc(count), .by_group = TRUE) |>
@@ -301,10 +302,23 @@ activity_2020_24 |> filter(student_status == "No" & !is.na(time_slot) & !is.na(a
   summarise(count = n(),
             avg_duration = mean(duration_hours),
             avg_nonwork_time_hours = mean(nonwork_time_hours),
+            prop_avg_duration = mean(duration_hours) / mean(nonwork_time_hours),
             .groups = 'drop') |>
   group_by(time_slot) |>
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 5)
+
+
+activity_2020_24 |> filter(!is.na(student_status) & !is.na(activity_detail)) |>
+  group_by(student_status, activity_detail) |> 
+  summarise(count = n(),
+            avg_duration = mean(duration_hours),
+            avg_nonwork_time_hours = mean(nonwork_time_hours),
+            prop_avg_duration = mean(duration_hours) / mean(nonwork_time_hours),
+            .groups = 'drop') |>
+  group_by(student_status) |> 
+  arrange(desc(count), .by_group = TRUE) |>
+  slice_head(n = 7)
 
 # Top 5 activities by age group
 activity_2020_24 |> 
