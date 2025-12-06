@@ -1,25 +1,23 @@
 ---
 title: "CSS Final Project: What's Today?"
-author: "Radhika Patel"
+author: "Somin Park, Emily Gill, Radhika Patel"
 date: "`r Sys.Date()`"
 output:
-  ioslides_presentation: default
   beamer_presentation:
-    theme: mtheme
-    colortheme: default
-    fonttheme: professionalfonts
+    theme: "Madrid"
+    colortheme: "default"
+    fonttheme: "professionalfonts"
     slide_level: 2
 fontsize: 11pt
-header-includes:
-  - \usepackage{appendixnumberbeamer}
+header-includes: \usepackage{appendixnumberbeamer}
 ---
 
-## Data and Methodology
+# Data and Methodology
 - ATUS
 - Meetup.com
   - Scrapped the website
   - Chromote
 
-## Application Demonstration
+# Application Demonstration
 
-## Takeaways
+# Takeaways
