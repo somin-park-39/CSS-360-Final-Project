@@ -11,9 +11,14 @@ output:
 fontsize: 11pt
 header-includes: \usepackage{appendixnumberbeamer}
 ---
-
+# Introduction
+- What's Today?
+  - Purpose
+  - Description
+  
 # Data and Methodology
-- ATUS
+- American Time Use Survey (ATUS)
+  
 - Meetup.com
   - Scrapped the website
   - Chromote
