@@ -176,7 +176,7 @@ server <- function(input, output, session) {
             range = c(-0.5, 0.5)
           ),
           yaxis = list(title = ""),
-          legend = list(x = 0.8, y = 1.0),
+          legend = list(x = 0.9, y = 0),
           margin = list(l = 150)
         )
       }
@@ -228,8 +228,7 @@ server <- function(input, output, session) {
       hovertemplate = "Average Duration Hours: %{value:.1f} hours<extra></extra>"
     ) |>
       layout(
-        showlegend = T,
-        margin = list(t=0, b=0, l=0, r=0)
+        showlegend = T
       )
   })
   
