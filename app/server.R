@@ -166,7 +166,6 @@ server <- function(input, output, session) {
           hovertemplate = "<b>Count:</b> %{customdata}<extra></extra>"
         ) |> 
         layout(
-          title = "Top 10 Activities: Student vs Non-student",
           barmode = 'overlay',
           xaxis = list(
             title = "Group",
