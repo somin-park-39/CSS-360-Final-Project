@@ -4,6 +4,7 @@ library(DT)
 library(plotly)
 
 server <- function(input, output, session) {
+  # Tab 1: Treemap
   # Filtering ATUS data based on user's inputs
   filtered_atus <- reactive({
     data <- ATUS_data
@@ -27,6 +28,7 @@ server <- function(input, output, session) {
     }
     data
   })
+  
   # visualization: treemap
   treemap <- reactive({
     req(nrow(filtered_atus()) > 0)
@@ -88,48 +90,150 @@ server <- function(input, output, session) {
       customdata = ~avg_duration
     ) |> 
       layout(
-        title = "Activities Treemap",
+        title = "Exploring Activities",
         margin = list(t=50, l=0, r=0, b=0)
       )
   })
   
-  output$scatterPlot <- renderPlotly({
-    req(nrow(filtered_atus()) > 0)
-    scatter_data <- filtered_atus() |>
-      filter(!is.na(activity_detail)) |> 
-      group_by(activity_detail, first_four_digits_classifications) |> 
-      summarise(
-        mean_duration = mean(duration_hours, na.rm = TRUE),
-        frequency = n(),
-        .groups = "drop"
-      ) |> 
-      filter(frequency > 100)
+  #Tab 2: Butterfly chart & Pie chart
+  filtered_atus_bar <- reactive({
+    data <- ATUS_data
+    # time slot
+    if (input$time_choice_bar != "All") {
+      data <- data |> filter(time_slot == input$time_choice_bar)
+    }
+    
+    # non-work time slider
+    req(input$nonwork_slider)
+    data <- data |> 
+      filter(nonwork_time_hours >= input$nonwork_slider[1],
+             nonwork_time_hours <= input$nonwork_slider[2])
+    data
+  })
+  # butterfly bar chart
+  output$top10Bar <- renderPlotly({
+    df <- filtered_atus_bar()
+    req(nrow(df) > 0)
+    
+   student_stats <- df |> 
+      filter(student_status == "Student") |> 
+      filter(!is.na(activity_detail))
+    
+    top_student_activities <- student_stats |> 
+      count(activity_detail, name = "count") |> 
+      mutate(prop = count / nrow(student_stats)) |> 
+      slice_max(prop, n = 10) |> 
+      arrange(prop)
+    
+    activity_order <- top_student_activities$activity_detail
+    
+    non_student_stats <- df |> 
+      filter(student_status == "Non-student") |> 
+      filter(!is.na(activity_detail))
+    
+    top_nonstudent_activities <- non_student_stats |>
+      filter(activity_detail %in% activity_order) |> 
+      count(activity_detail, name = "count") |> 
+      mutate(prop = count / nrow(non_student_stats))
+    
+    plot_data <- top_student_activities |> 
+      select(activity_detail, prop_student = prop, count_student = count) |> 
+      left_join(top_nonstudent_activities |> select(activity_detail, prop_non = prop, count_non = count), by = "activity_detail") |> 
+      mutate(prop_non = ifelse(is.na(prop_non), 0, prop_non),
+             count_non = ifelse(is.na(count_non), 0, count_non))
+      
+      plot_ly(
+      data = plot_data, source = "butterflySource") |> 
+        add_bars(
+          x = ~ -prop_student,
+          y = ~factor(activity_detail, levels = activity_order),
+          name = "Student",
+          orientation = 'h',
+          marker = list(color = '#FF8296'),
+          text = ~paste0(round(prop_student * 100, 1), "%"),
+          textposition = "auto",
+          customdata = ~count_student,
+          hovertemplate = "<b>Count:</b> %{customdata}<extra></extra>") |> 
+        add_bars(
+          x = ~prop_non,
+          y = ~factor(activity_detail, levels = activity_order),
+          name = "Non-student",
+          orientation = 'h',
+          marker = list(color = '#75CDD8'), 
+          text = ~paste0(round(prop_non * 100, 1), "%"),
+          textposition = "auto",
+          customdata = ~count_non,
+          hovertemplate = "<b>Count:</b> %{customdata}<extra></extra>"
+        ) |> 
+        layout(
+          title = "Top 10 Activities: Student vs Non-student",
+          barmode = 'overlay',
+          xaxis = list(
+            title = "Group",
+            tickmode = "array",
+            tickvals = c(-0.4, -0.2, 0, 0.2, 0.4), 
+            ticktext = c("40%", "20%", "0%", "20%", "40%"),
+            range = c(-0.5, 0.5)
+          ),
+          yaxis = list(title = ""),
+          legend = list(x = 0.8, y = 1.0),
+          margin = list(l = 150)
+        )
+      }
+   )
+      
+  
+  # pie chart (click)
+  selected_activity_data <- reactive({
+    click_data <- event_data("plotly_click", source = "butterflySource")
+    
+    if (is.null(click_data)) return(NULL)
+    selected_activity <- click_data$y
+    df_subset <- filtered_atus_bar() |> 
+      filter(activity_detail == selected_activity)
+    list(
+      name = selected_activity,
+      data = df_subset
+    )
+  })
+  
+  output$selected_activity_name <- renderText({
+    selected <- selected_activity_data()
+    if (is.null(selected)) return("Click a bar above to see duration details")
+    paste("Average Duration for:", selected$name)
+  })
+  
+  output$activityPie <- renderPlotly({
+    selected <- selected_activity_data()
+    req(selected)
+    
+    df <- selected$data
+    req(nrow(df) > 0)
+    mean_duration <- mean(df$duration_hours, na.rm = T)
+    mean_nonwork <- mean(df$nonwork_time_hours, na.rm = T)
+    remaining_time <- max(0, mean_nonwork - mean_duration)
+    
+    pie_df <- data.frame(
+      category = c("Activity Duration", "Remaining Time"),
+      hours = c(mean_duration, remaining_time)
+    )
+    
     plot_ly(
-      data = scatter_data,
-      x = ~mean_duration,
-      y = ~frequency,
-      type = 'scatter',
-      mode = 'markers',
-      size = ~frequency, 
-      color = ~first_four_digits_classifications,
-      colors = "Set2",
-      text = ~paste(
-        "<b>", activity_detail, "</b><br>",
-        "broad category:", first_four_digits_classifications, "<br>",
-        "average duration:", round(mean_duration, 1), "hours<br>",
-        "count:", frequency
-      ),
-      hoverinfo = "text"
+      data = pie_df,
+      labels = ~category,
+      values = ~hours,
+      type = 'pie',
+      textinfo = 'label+percent',
+      marker = list(colors = c("#673AB7", "#C8D1DB")),
+      hovertemplate = "Average Duration Hours: %{value:.1f} hours<extra></extra>"
     ) |>
       layout(
-        title = "Do you want short or long activities?",
-        xaxis = list(title = "Average Duration (hours)"),
-        yaxis = list(title = "Number of People Who Enjoy the Activity"),
-        legend = list(title = list(text = "Category"))
+        showlegend = T,
+        margin = list(t=0, b=0, l=0, r=0)
       )
-    })
+  })
   
-  # meetup.com Events
+  #Tab 3: Meetup Events
   meetup_to_show <- reactive({
     if (!exists("meetup_events")) return(NULL)
     data <- meetup_events

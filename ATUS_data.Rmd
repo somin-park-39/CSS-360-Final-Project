@@ -186,7 +186,7 @@ activity_2020_24 |> group_by(location_detail) |> summarize(n())
 # student status 
 activity_2020_24$student_status <- factor(activity_2020_24$student_status,
                                levels = c(1, 2),        
-                               labels = c("Yes", "No"))
+                               labels = c("Student", "Non-student"))
 
 # work status
 activity_2020_24$work_status <- factor(activity_2020_24$work_status,
@@ -245,7 +245,7 @@ activity_2020_24 <- activity_2020_24 |>
   relocate(season, .before = month)
 ```
 
-```{r observations}
+```{r observation1}
 activity_2020_24 |>
   group_by(first_four_digits_classifications, activity_detail) |> count(sort = T) |> arrange(desc(n))
 
@@ -284,9 +284,11 @@ activity_2020_24 |>
   group_by(location_detail) |> 
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 3)
+```
 
+```{r observation2}
 # top 5 activities and duration for each time slot based on student status
-activity_2020_24 |> filter(student_status == "Yes" & !is.na(time_slot) & !is.na(activity_detail)) |>
+activity_2020_24 |> filter(student_status == "Student" & !is.na(time_slot) & !is.na(activity_detail)) |>
   group_by(time_slot, activity_detail) |> 
   summarise(count = n(),
             avg_duration = mean(duration_hours),
@@ -297,7 +299,7 @@ activity_2020_24 |> filter(student_status == "Yes" & !is.na(time_slot) & !is.na(
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 5)
 
-activity_2020_24 |> filter(student_status == "No" & !is.na(time_slot) & !is.na(activity_detail)) |>
+activity_2020_24 |> filter(student_status == "Non-student" & !is.na(time_slot) & !is.na(activity_detail)) |>
   group_by(time_slot, activity_detail) |> 
   summarise(count = n(),
             avg_duration = mean(duration_hours),
@@ -309,7 +311,7 @@ activity_2020_24 |> filter(student_status == "No" & !is.na(time_slot) & !is.na(a
   slice_head(n = 5)
 
 # proportion of activity duration based on student status
-prop_duration_non_student <- activity_2020_24 |> filter(student_status == "No" & !is.na(student_status) & !is.na(activity_detail)) |>
+prop_duration_non_student <- activity_2020_24 |> filter(student_status == "Non-student" & !is.na(student_status) & !is.na(activity_detail)) |>
   group_by(student_status, activity_detail) |> 
   summarise(count = n(),
             avg_duration = mean(duration_hours),
@@ -333,7 +335,9 @@ prop_duration_student <- activity_2020_24 |> filter(student_status == "Yes" & !i
 
 bind <- bind_rows(prop_duration_student, prop_duration_non_student)
 bind
+```
 
+```{r observation3}
 # Top 5 activities by age group
 activity_2020_24 |> 
   filter(!is.na(age_group) & !is.na(activity_detail)) |>
@@ -374,6 +378,14 @@ activity_2020_24 |>
   group_by(age_group) |> 
   arrange(desc(count), .by_group = TRUE) |>
   slice_head(n = 5)
+
+activity_2020_24 |>
+  filter(!is.na(student_status) & !is.na(activity_detail) & !is.na(work_status)) |> 
+  group_by(activity_detail) |> 
+  summarise(count = n(), .groups = 'drop') |> 
+  arrange(desc(count)) |> 
+  slice_head(n = 10)
+                             
 ```
 
 ```{r}
