@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ---
 title: "CSS Final Project: What's Today?"
 author: "Somin Park, Emily Gill, Radhika Patel"
