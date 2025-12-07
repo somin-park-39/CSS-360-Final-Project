@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 title: "CSS Final Project: What's Today?"
 author: "Somin Park, Emily Gill, Radhika Patel"
@@ -12,6 +13,7 @@ fontsize: 11pt
 ---
 # Introduction
 - What's Today?
+  - People sometimes struggles with what leisure activities would they do.
   - Users can filter through suggested leisure activities 
     - Find activities based on age, time of day, and location
     - New York City events based on category of event
@@ -19,8 +21,13 @@ fontsize: 11pt
     - Dynamic tables and visualizations that update immediately with user selections
 
 # Data and Methodology
-- American Time Use Survey
-  - add info
+- American Time Use Survey (ATUS)
+  - Existing datasets  (\href{https://www.bls.gov/tus/home.htm}{US Bureau of Labor Statistics})
+  - Measures the amount of time people spend doing various activities
+  - Merging Resp, Roster, & Activity files
+  - Selecting relevant columns, recoding numerical codes to text labels
+  - Descriptive statistics (frequency distribution, mean duration, etc.)
+  
 - Meetup.com
   - Scrapped the website
     - Name

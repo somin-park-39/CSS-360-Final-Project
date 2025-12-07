@@ -16,7 +16,7 @@ options(scipen=999)
 ```
 
 ## ATUS Data
-Reference for data descriptions: https://www.bls.gov/tus/data/datafiles-0324.htm
+Reference for data descriptions: https://www.bls.gov/tus/data/datafiles-0324.html
 
 Data files google drive: https://drive.google.com/drive/folders/1RYAvKluPasULGk68OPw5b8FkcoFuPK16?usp=drive_link
 
