@@ -9,20 +9,30 @@ output:
     fonttheme: "professionalfonts"
     slide_level: 2
 fontsize: 11pt
-header-includes: \usepackage{appendixnumberbeamer}
 ---
 # Introduction
 - What's Today?
-  - Purpose
-  - Description
-  
+  - Users can filter through suggested leisure activities 
+    - Find activities based on age, time of day, and location
+    - New York City events based on category of event
+  - Interactive dashboard complied of ATUS and Meetup.com data
+    - Dynamic tables and visualizations that update immediately with user selections
+
 # Data and Methodology
-- American Time Use Survey (ATUS)
-  
+- American Time Use Survey
+  - add info
 - Meetup.com
   - Scrapped the website
+    - Name
+    - Date & time
+    - Group/organization
   - Chromote
 
 # Application Demonstration
+- [What's Today](https://ql0713-somin-park.shinyapps.io/app_2/)
+\begin{center}
+\includegraphics[width=0.7\textwidth]{exploring_activities.png}
+\end{center}
 
 # Takeaways
+- 
