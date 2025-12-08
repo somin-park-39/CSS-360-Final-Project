@@ -385,7 +385,25 @@ activity_2020_24 |>
   summarise(count = n(), .groups = 'drop') |> 
   arrange(desc(count)) |> 
   slice_head(n = 10)
-                             
+
+# regression: playing game duration & non-work time hours
+games <- activity_2020_24 |> 
+  filter(activity_detail == "Playing games") |> 
+  filter(!is.na(nonwork_time_hours) & !is.na(duration_hours))
+
+model <- lm(duration_hours ~ nonwork_time_hours, data = games)
+
+summary(model)
+
+ggplot(games, aes(x = nonwork_time_hours, y = duration_hours)) +
+  geom_point(alpha = 0.5, color = "grey") +
+  geom_smooth(method = "lm") +
+  labs(
+    title = "Gaming Duration vs. Non-work Time",
+    x = "Non-work Time Hours",
+    y = "Time Spent Playing Games Hours"
+  ) +
+  theme_minimal()
 ```
 
 ```{r}
