@@ -4,35 +4,56 @@ author: "Somin Park, Emily Gill, Radhika Patel"
 date: "`r Sys.Date()`"
 output:
   beamer_presentation:
-    theme: "Madrid"
-    colortheme: "default"
-    fonttheme: "professionalfonts"
-    slide_level: 2
+    theme: "AnnArbor"
+    colortheme: "dolphin"
+    fonttheme: "structurebold"
+    slide_level: 1
 fontsize: 11pt
 ---
 # Introduction
-- What's Today?
-  - People sometimes struggles with what leisure activities would they do.
-  - Users can filter through suggested leisure activities 
-    - Find activities based on age, time of day, and location
-    - New York City events based on category of event
-  - Interactive dashboard complied of ATUS and Meetup.com data
-    - Dynamic tables and visualizations that update immediately with user selections
+- Problem: People often feel indecisive or don’t know which leisure activities or hobbies might fit their interests, time, or location.
+- Solution: Our app “What’s Today?”
+- Users input age, time of day, day of the week, and location to receive general leisure activities and hobbies.
+    - ATUS data
+- Secondary Component: NYC meetup.com events
+  - Join a group, try something new, be spontaneous!
+- Interactive dashboard and dynamic tables and visualizations that update immediately with user selections
 
-# Data and Methodology
+# Data and Methodology - ATUS
 - American Time Use Survey (ATUS)
-  - Existing datasets  (\href{https://www.bls.gov/tus/home.htm}{US Bureau of Labor Statistics})
+  - Existing datasets  (US Bureau of Labor Statistics)
   - Measures the amount of time people spend doing various activities
+- Methods
   - Merging Resp, Roster, & Activity files
   - Selecting relevant columns, recoding numerical codes to text labels
   - Descriptive statistics (frequency distribution, mean duration, etc.)
-  
+    
+# Data and Methodology - Meetup.com
 - Meetup.com
-  - Scrapped the website
-    - Name
-    - Date & time
-    - Group/organization
-  - Chromote
+- Scraped the website
+  - Name, Date & time
+  - Group/organization
+  - Several categories
+- Chromote
+  - Package for web page interaction
+  - Headless Chrome session
+
+# Data and Methodology - Application
+- GitHub Repository
+  - Allowed for version control and collaboration
+- R Shiny
+  - Open-source R package
+  - Build interactive web applications directly from R
+- Global.R
+  - Loaded in libraries and data
+  - read_csv() and bind_rows()
+- UI.R
+  - Created visual layout for user input and output
+  - selectInput(), plotlyOutput(), DTOutput(), titlePanel()
+- Server.R
+  - App logic, filtering, and rendering outputs
+  - ATUS Data: filtered by user selections
+  - Meetup.com Data: Filtered by event category
 
 # Application Demonstration
 - [What's Today](https://ql0713-somin-park.shinyapps.io/app_2/)
@@ -40,5 +61,24 @@ fontsize: 11pt
 \includegraphics[width=0.7\textwidth]{exploring_activities.png}
 \end{center}
 
+#
+- [What's Today](https://ql0713-somin-park.shinyapps.io/app_2/)
+\begin{center}
+\includegraphics[width=0.7\textwidth]{top_activities.png}
+\end{center}
+
+#
+- [What's Today](https://ql0713-somin-park.shinyapps.io/app_2/)
+\begin{center}
+\includegraphics[width=0.7\textwidth]{nyc_meetup.png}
+\end{center}
+
 # Takeaways
-- 
+- Radhika:
+  - Scraping for HTML can be tedious
+    - Multiple categories of events, different HTMLS
+- Somin:
+  - Add a visualization to explore how activities change depending on who they are spending their leisure time with
+- Emily:
+  - Github helped work in a group, but I had issues pushing and pulling and figuring out the working directory
+  - No weather/geographical capabilities due to complexity of app code for dynamic data like weather
