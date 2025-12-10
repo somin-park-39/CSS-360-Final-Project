@@ -103,10 +103,10 @@ server <- function(input, output, session) {
   
   # Switch treemap to meetup when clicking these categories (not all categories)
   atus_to_meetup <- c("Socializing and Communicating" = "Socializing",
-                      "Sports, Exercise, and Recreation" = "Sports Exercise Leisure",
-                      "Eating and Drinking" = "Health Wellbeing", 
-                      "Travel related to household activities" = "Parents Family",
-                      "Traveling" = "Traveling Outdoor",
+                      "Participating in Sports, Exercise, and Recreation" = "Sports, Exercise and Leisure",
+                      "Eating and Drinking" = "Health and Wellbeing", 
+                      "Travel related to household activities" = "Parents and Family",
+                      "Traveling" = "Traveling and Outdoors",
                       "Attending or Hosting Social Events" = "Events, Hobbies, and Passions")
   
   observeEvent(event_data("plotly_click", source = "treemapSource"), {
