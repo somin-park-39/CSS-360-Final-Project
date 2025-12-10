@@ -37,7 +37,7 @@ server <- function(input, output, session) {
     
     df <- df |> 
       filter(!is.na(first_four_digits_classifications) & !is.na(activity_detail))
-    
+    # parents (larger category)
     parents <- df |> 
       group_by(first_four_digits_classifications) |> 
       summarize(
@@ -49,9 +49,13 @@ server <- function(input, output, session) {
         labels = first_four_digits_classifications,
         parents = "",
         category_name = first_four_digits_classifications,
-        color_group = first_four_digits_classifications
+        color_group = first_four_digits_classifications,
+        box_text = paste(
+          "<b>", labels, "</b><br>",
+          "count: ", value, "<br>",
+          "average duration: ", round(avg_duration, 1), "hours")
       )
-    
+    # children (subcategories)
     children <- df |> 
       group_by(first_four_digits_classifications, activity_detail) |> 
       summarize(
@@ -64,7 +68,10 @@ server <- function(input, output, session) {
         labels = activity_detail,
         parents = first_four_digits_classifications,
         category_name = first_four_digits_classifications,
-        color_group = first_four_digits_classifications
+        color_group = first_four_digits_classifications,
+        box_text = paste(
+          "count: ", value, "<br>",
+          "average duration: ", round(avg_duration, 1), "hours")
       )
     
     bind_rows(parents, children)
@@ -82,12 +89,11 @@ server <- function(input, output, session) {
       type = "treemap",
       branchvalues = "total",
       marker = list(colorscale = "Viridis"),
+      text= ~box_text,
       hovertemplate = paste(
-        "<b>%{label}</b><br>",
-        "count: %{value}<br>",
-        "average duration: %{customdata:.1f}hours<extra></extra>"
+        "<b>%{label}<br><extra></extra>"
       ),
-      customdata = ~avg_duration
+      customdata = ~category_name, source = "treemapSource"
     ) |> 
       layout(
         title = "Exploring Activities",
@@ -95,7 +101,32 @@ server <- function(input, output, session) {
       )
   })
   
-  #Tab 2: Butterfly chart & Pie chart
+  # Switch treemap to meetup when clicking these categories (not all categories)
+  atus_to_meetup <- c("Socializing and Communicating" = "Socializing",
+                      "Sports, Exercise, and Recreation" = "Sports Exercise Leisure",
+                      "Eating and Drinking" = "Health Wellbeing", 
+                      "Travel related to household activities" = "Parents Family",
+                      "Traveling" = "Traveling Outdoor",
+                      "Attending or Hosting Social Events" = "Events, Hobbies, and Passions")
+  
+  observeEvent(event_data("plotly_click", source = "treemapSource"), {
+    click_data <- event_data("plotly_click", source = "treemapSource")
+    req(click_data)
+    
+    clicked_category <- click_data$customdata
+    if(is.list(clicked_category)) {
+      clicked_category <- click_category[[1]]
+    }
+    
+    meetup_category <- atus_to_meetup[[clicked_category]]
+    if (!is.null(meetup_category)) {
+      updateSelectInput(session, "activity_category", selected = meetup_category)
+      
+      updateTabsetPanel(session, "nav_tabs", selected = "NYC meetup.com Events")
+    }
+  })
+  
+  # Tab 2: Butterfly chart & Pie chart
   filtered_atus_bar <- reactive({
     data <- ATUS_data
     # time slot
@@ -126,7 +157,7 @@ server <- function(input, output, session) {
       arrange(prop)
     
     activity_order <- top_student_activities$activity_detail
-    
+    # based on the top 10 activities for students, made comparison between students and non-students
     non_student_stats <- df |> 
       filter(student_status == "Non-student") |> 
       filter(!is.na(activity_detail))
@@ -182,7 +213,7 @@ server <- function(input, output, session) {
    )
       
   
-  # pie chart (click)
+  # pie chart when clicking bars
   selected_activity_data <- reactive({
     click_data <- event_data("plotly_click", source = "butterflySource")
     
@@ -231,7 +262,7 @@ server <- function(input, output, session) {
       )
   })
   
-  #Tab 3: Meetup Events
+  # Tab 3: Meetup Events
   meetup_to_show <- reactive({
     if (!exists("meetup_events")) return(NULL)
     data <- meetup_events

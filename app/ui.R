@@ -6,7 +6,7 @@ ui <- fluidPage(
   # Title
   titlePanel("What's Today?"),
   
-  tabsetPanel(
+  tabsetPanel(id = "nav_tabs",
     # Tab 1:  Treemap
     tabPanel("Exploring Activities",
              br(),
@@ -41,7 +41,7 @@ ui <- fluidPage(
                  selected = "All"),
                
                hr(),
-               p(class = "text-muted", "Click to zoom-in more detailed activity options.")),
+               p(class = "text-muted", "1. Click to zoom-in more detailed activity options.", br(), "2. Click subcategories to see MeetUp events.")),
                
                mainPanel(
                  plotlyOutput("treemapPlot", height = "600px")

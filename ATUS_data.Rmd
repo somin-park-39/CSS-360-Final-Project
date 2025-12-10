@@ -20,13 +20,13 @@ Reference for data descriptions: https://www.bls.gov/tus/data/datafiles-0324.htm
 
 Data files google drive: https://drive.google.com/drive/folders/1RYAvKluPasULGk68OPw5b8FkcoFuPK16?usp=drive_link
 
-```{r import}
+```{r import data}
 resp <- read.delim('atusresp-0324/atusresp_0324.dat', sep=",")
 rost <- read.delim('atusrost-0324/atusrost_0324.dat', sep=",")
 activity <- read.delim('atusact-0324/atusact_0324.dat', sep=",")
 ```
 
-```{r cleaning columns}
+```{r selecting columns}
 rost <- rost |> filter(TULINENO == 1)
 
 rost <- rost |> select(TUCASEID, TEAGE, TESEX)
@@ -64,7 +64,7 @@ resp <- left_join(resp, rost, by = "id") |> relocate(c(age, gender), .after = id
 activity <- left_join(activity, resp, by = "id") #merge activity and resp data
 ```
 
-```{r cleaning1}
+```{r cleaning1 factorizing}
 activity$gender <- factor(activity$gender,
                                levels = c(1, 2),        
                                labels = c("M", "F"))
@@ -77,11 +77,12 @@ activity$day_of_wk <- factor(activity$day_of_wk,
 ```
 
 ```{r cleaning2}
-activity_2020_24 <- activity |> filter(year %in% 2020:2024) |> filter(first_two_digits_activity %in% c(11, 12, 13, 18)) #filter from 2020 to 2024 & leisure-related activities
+#filter from 2020 to 2024 & leisure-related activities
+activity_2020_24 <- activity |> filter(year %in% 2020:2024) |> filter(first_two_digits_activity %in% c(11, 12, 13, 18))
 
 activity_2020_24 <- activity_2020_24 |> mutate(first_two_digits_classification = factor(activity_2020_24$first_two_digits_activity,
                              levels = c(11, 12, 13, 18),
-                             labels = c("Eating and Drinking", "Socializing, Relaxing, and Leisure", "Sports, Exercise, & Recreation", "Traveling"))) |> relocate(first_two_digits_classification, .after = first_two_digits_activity) # re-coding first two digits
+                             labels = c("Eating and Drinking", "Socializing, Relaxing, and Leisure", "Sports, Exercise, & Recreation", "Traveling"))) |> relocate(first_two_digits_classification, .after = first_two_digits_activity) # recoding first two digits
 
 activity_2020_24 |> count(first_four_digits_activity)
 
@@ -100,10 +101,10 @@ activity_2020_24 <- activity_2020_24 |> mutate(first_four_digits_classifications
                            `1811` = "Traveling",
                            `1812` = "Traveling",
                            `1813` = "Traveling")) |> 
-  relocate(first_four_digits_classifications, .after = first_four_digits_activity) # re-coding
+  relocate(first_four_digits_classifications, .after = first_four_digits_activity)
 
 activity_2020_24 |> count(first_four_digits_classifications)
-# key activity code: 12, 13 => need to recode them in detail.
+# key activity code: 12, 13, 18
 ```
 
 ```{r cleaning3}
@@ -275,18 +276,9 @@ activity_2020_24 |>
 
 # most frequent locations
 activity_2020_24 |> filter(!is.na(location_detail)) |> group_by(location_detail) |> count() |> arrange(desc(n))
-
-# top 3 activities for each location
-activity_2020_24 |> 
-  filter(!is.na(location_detail) & !is.na(activity_detail)) |>
-  group_by(location_detail, activity_detail) |>
-  summarise(count = n(), .groups = 'drop') |>
-  group_by(location_detail) |> 
-  arrange(desc(count), .by_group = TRUE) |>
-  slice_head(n = 3)
 ```
 
-```{r observation2}
+```{r observation2 for tab2}
 # top 5 activities and duration for each time slot based on student status
 activity_2020_24 |> filter(student_status == "Student" & !is.na(time_slot) & !is.na(activity_detail)) |>
   group_by(time_slot, activity_detail) |> 
@@ -364,9 +356,6 @@ activity_2020_24 |>
     y = "Proportion",
     fill = "Activity Category"
   )
-
-# Ppl usually do what in Tourist spots/other places
-activity_2020_24 |> filter(location_detail == "Tourist spots/other place" & !is.na(activity_detail)) |> group_by(activity_detail) |> count() |> arrange(desc(n))
 ```
 
 ```{r visualization}
@@ -385,7 +374,9 @@ activity_2020_24 |>
   summarise(count = n(), .groups = 'drop') |> 
   arrange(desc(count)) |> 
   slice_head(n = 10)
+```
 
+```{r regression}
 # regression: playing game duration & non-work time hours
 games <- activity_2020_24 |> 
   filter(activity_detail == "Playing games") |> 
@@ -406,7 +397,7 @@ ggplot(games, aes(x = nonwork_time_hours, y = duration_hours)) +
   theme_minimal()
 ```
 
-```{r}
+```{r save data}
 write_csv(activity_2020_24, "app/data/atus_activity_2020_24.csv")
 ```
 
