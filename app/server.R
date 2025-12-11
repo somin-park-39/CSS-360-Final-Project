@@ -115,14 +115,16 @@ server <- function(input, output, session) {
     
     clicked_category <- click_data$customdata
     if(is.list(clicked_category)) {
-      clicked_category <- click_category[[1]]
+      clicked_category <- clicked_category[[1]]
     }
+    
+    if(!is.null(clicked_category) && (clicked_category %in% names(atus_to_meetup))) {
     
     meetup_category <- atus_to_meetup[[clicked_category]]
     if (!is.null(meetup_category)) {
       updateSelectInput(session, "activity_category", selected = meetup_category)
       
-      updateTabsetPanel(session, "nav_tabs", selected = "NYC meetup.com Events")
+      updateTabsetPanel(session, "nav_tabs", selected = "NYC meetup.com Events")}
     }
   })
   
