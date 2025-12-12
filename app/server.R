@@ -95,6 +95,7 @@ server <- function(input, output, session) {
       ),
       customdata = ~category_name, source = "treemapSource"
     ) |> 
+      event_register("plotly_click") |> 
       layout(
         title = "Exploring Activities",
         margin = list(t=50, l=0, r=0, b=0)
@@ -103,11 +104,11 @@ server <- function(input, output, session) {
   
   # Switch treemap to meetup when clicking these categories (not all categories)
   atus_to_meetup <- c("Socializing and Communicating" = "Socializing",
-                      "Participating in Sports, Exercise, and Recreation" = "Sports, Exercise and Leisure",
-                      "Eating and Drinking" = "Health and Wellbeing", 
-                      "Travel related to household activities" = "Parents and Family",
-                      "Traveling" = "Traveling and Outdoors",
-                      "Attending or Hosting Social Events" = "Events, Hobbies, and Passions")
+                      "Participating in Sports, Exercise, and Recreation" = "Sports Exercise Leisure",
+                      "Eating and Drinking" = "Health Wellbeing", 
+                      "Travel related to household activities" = "Parents Family",
+                      "Traveling" = "Traveling Outdoor",
+                      "Attending or Hosting Social Events" = "Hobbies Passions")
   
   observeEvent(event_data("plotly_click", source = "treemapSource"), {
     click_data <- event_data("plotly_click", source = "treemapSource")
@@ -177,6 +178,7 @@ server <- function(input, output, session) {
       
       plot_ly(
       data = plot_data, source = "butterflySource") |> 
+        event_register("plotly_click") |> 
         add_bars(
           x = ~ -prop_student,
           y = ~factor(activity_detail, levels = activity_order),
